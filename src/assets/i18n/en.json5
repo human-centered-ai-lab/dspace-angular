@@ -2000,6 +2000,25 @@
   "profile.title": "Update Profile",
 
 
+  "scan.page.titleprefix": "Scan",
+  "scan.listelement.badge": "Scan",
+  "scan.scanner.manufacturer": "Manufacturer",
+  "scan.scanner.type": "Scanne Type",
+  "scan.scanner.operator": "Scan Operator",
+
+  "slide.page.titleprefix": "Slide",
+  "slide.listelement.badge": "Slide",
+  "slide.dimension.height": "Slide height (mm)",
+  "slide.dimension.width": "Slide width (mm)",
+  "item.page.relationships.isSlideOfScan": "Scans of the Slide",
+  "item.page.relationships.isSlideOfWsi": "WSI of the Slide",
+  "slide.identifier.label": "Slide Label",
+
+  "scan.search.results.head": "Scans",
+  "wsi.search.results.head": "Whole Slide Images",
+
+  
+
 
   "project.listelement.badge": "Research Project",
 
