@@ -26,40 +26,34 @@
     <!--</ds-generic-item-page-field>-->
   </div>
   <div class="col-xs-12 col-md-6">
-    <ds-related-items
-      [parentItem]="object"
-      [relationType]="'isWsiOfScan'"
-      [label]="'relationships.isWsiOf' | translate">
-    </ds-related-items>
+
+    <ds-generic-item-page-field [item]="object"
+    [fields]="['scan.operator']"
+    [label]="'scan.operator'">
+    </ds-generic-item-page-field>
+    <ds-generic-item-page-field [item]="object"
+    [fields]="['scan.scanner.manufacturer']"
+    [label]="'scan.scanner.manufacturer'">
+    </ds-generic-item-page-field>
+
+  
     <ds-related-items
       [parentItem]="object"
       [relationType]="'isSlideOfScan'"
-      [label]="'relationships.isSlideOf' | translate">
+      [label]="'relationships.isSlideOfScan' | translate">
     </ds-related-items>
-    <ds-generic-item-page-field [item]="object"
-      [fields]="['scan.jobTitle']"
-      [label]="'scan.page.jobtitle'">
-    </ds-generic-item-page-field>
-    <ds-generic-item-page-field [item]="object"
-      [fields]="['scan.familyName']"
-      [label]="'scan.page.lastname'">
-    </ds-generic-item-page-field>
-    <ds-generic-item-page-field [item]="object"
-      [fields]="['scan.givenName']"
-      [label]="'scan.page.firstname'">
-    </ds-generic-item-page-field>
+
+    <h5 class="simple-view-element-header">{{'scan.wsi.listlabel' | translate}}</h5>
+    
+    <ds-related-items
+      [parentItem]="object"
+      [relationType]="'isWsiOfScan'"
+      [label]="'relationships.isWsiOfScan' | translate">
+    </ds-related-items>
+
     <div>
       <a class="btn btn-outline-primary" [routerLink]="['/items/' + object.id + '/full']">
         {{"item.page.link.full" | translate}}
       </a>
     </div>
-  </div>
-  <div class="mt-5 w-100">
-    <ds-tabbed-related-entities-search  [item]="object"
-                                        [relationTypes]="[{
-                                          label: 'isScanOfSlide',
-                                          filter: 'isScanOfSlide'
-                                        }]">
-    </ds-tabbed-related-entities-search>
-  </div>
 </div>

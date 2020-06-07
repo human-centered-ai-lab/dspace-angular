@@ -2004,7 +2004,9 @@
   "scan.listelement.badge": "Scan",
   "scan.scanner.manufacturer": "Manufacturer",
   "scan.scanner.type": "Scanne Type",
-  "scan.scanner.operator": "Scan Operator",
+  "scan.operator": "Scan Operator",
+  "scan.search.results.head": "Scans",
+  "scan.wsi.listlabel": "Whole Slide Images availble",
 
   "slide.page.titleprefix": "Slide",
   "slide.listelement.badge": "Slide",
@@ -2013,12 +2015,11 @@
   "item.page.relationships.isSlideOfScan": "Scans of the Slide",
   "item.page.relationships.isSlideOfWsi": "WSI of the Slide",
   "slide.identifier.label": "Slide Label",
+  "relationships.isScanOfSlide": "Scans of the Slide",
+  "relationships.isSlideOfScan": "Slide",
 
-  "scan.search.results.head": "Scans",
   "wsi.search.results.head": "Whole Slide Images",
-
   
-
 
   "project.listelement.badge": "Research Project",
 
