@@ -34,7 +34,19 @@ services:
     tty: true
     volumes:
     - pgdata:/pgdata
-  dspacesolr:
+  
+  adminer:
+    container_name: dspaceadminer
+    image: adminer
+    networks:
+        dspacenet:
+    ports:
+        - 8088:8080
+    links:
+        - dspacedb:db
+
+  
+    dspacesolr:
     container_name: dspacesolr
     image: dspace/dspace-solr
     networks:
