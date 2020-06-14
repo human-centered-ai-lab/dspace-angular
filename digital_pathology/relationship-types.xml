@@ -162,7 +162,7 @@
 </type>
 
 <type>
-       <leftType>WSITransform</leftType>
+       <leftType>WsiTransform</leftType>
        <rightType>Wsi</rightType>
        <leftwardType>isWsiOfTransform</leftwardType>
        <rightwardType>isTransformOfWsi</rightwardType>
