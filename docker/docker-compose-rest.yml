@@ -46,7 +46,7 @@ services:
         - dspacedb:db
 
   
-    dspacesolr:
+  dspacesolr:
     container_name: dspacesolr
     image: dspace/dspace-solr
     networks:

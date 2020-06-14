@@ -25,6 +25,11 @@
       [relationType]="'isScanOfSlide'"
       [label]="'relationships.isScanOfSlide' | translate">
     </ds-related-items>
+    <ds-related-items
+      [parentItem]="object"
+      [relationType]="'isWsiOfSlide'"
+      [label]="'relationships.isWsiOfSlide' | translate">
+  </ds-related-items>
     <ds-generic-item-page-field [item]="object"
       [fields]="['dc.description']"
       [label]="'Slide.page.description'">

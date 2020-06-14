@@ -2013,10 +2013,20 @@
   "slide.dimension.height": "Slide height (mm)",
   "slide.dimension.width": "Slide width (mm)",
   "item.page.relationships.isSlideOfScan": "Scans of the Slide",
-  "item.page.relationships.isSlideOfWsi": "WSI of the Slide",
   "slide.identifier.label": "Slide Label",
+  
+  
+  "relationships.isScanOf" : "Scanning Parameter",
+  "relationships.isSlideOf" : "Slide",
+
   "relationships.isScanOfSlide": "Scans of the Slide",
   "relationships.isSlideOfScan": "Slide",
+  "relationships.isWsiOfSlide": "Whole Slide Images of the Slide",
+  "relationships.isWsiOfScan": "Whole Slide Images derived from the Scan",
+
+  "wsi.page.titleprefix": "Whole Slide Image",
+  "wsi.listelement.badge": "Whole Slide Image",
+  
 
   "wsi.search.results.head": "Whole Slide Images",
   
