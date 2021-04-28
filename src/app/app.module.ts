@@ -22,12 +22,9 @@ import { appReducers, AppState, storeModuleConfig } from './app.reducer';
 import { CheckAuthenticationTokenAction } from './core/auth/auth.actions';
 import { CoreModule } from './core/core.module';
 import { ClientCookieService } from './core/services/client-cookie.service';
-<<<<<<< HEAD
 import { JournalEntitiesModule } from './entity-groups/journal-entities/journal-entities.module';
 import { ResearchEntitiesModule } from './entity-groups/research-entities/research-entities.module';
 import { PathologyEntitiesModule } from './entity-groups/pathology-entities/pathology-entities.module';
-=======
->>>>>>> pb/main
 import { FooterComponent } from './footer/footer.component';
 import { HeaderNavbarWrapperComponent } from './header-nav-wrapper/header-navbar-wrapper.component';
 import { HeaderComponent } from './header/header.component';
