@@ -1,6 +1,6 @@
 // Load the implementations that should be tested
 import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { async, ComponentFixture, fakeAsync, inject, TestBed, tick, } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, inject, TestBed, tick, waitForAsync, } from '@angular/core/testing';
 
 import { Chips } from './models/chips.model';
 import { UploaderService } from '../uploader/uploader.service';
@@ -11,7 +11,7 @@ import { FormFieldMetadataValueObject } from '../form/builder/models/form-field-
 import { createTestComponent } from '../testing/utils.test';
 import { AuthorityConfidenceStateDirective } from '../authority-confidence/authority-confidence-state.directive';
 import { TranslateModule } from '@ngx-translate/core';
-import { ConfidenceType } from '../../core/integration/models/confidence-type';
+import { ConfidenceType } from '../../core/shared/confidence-type';
 import { SortablejsModule } from 'ngx-sortablejs';
 import { environment } from '../../../environments/environment';
 
@@ -24,13 +24,13 @@ describe('ChipsComponent test suite', () => {
   let html;
   let chips: Chips;
 
-  // async beforeEach
-  beforeEach(async(() => {
+  // waitForAsync beforeEach
+  beforeEach(waitForAsync(() => {
 
     TestBed.configureTestingModule({
       imports: [
         NgbModule,
-        SortablejsModule.forRoot({animation: 150}),
+        SortablejsModule.forRoot({ animation: 150 }),
         TranslateModule.forRoot()
       ],
       declarations: [

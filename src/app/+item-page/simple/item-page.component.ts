@@ -11,8 +11,10 @@ import { Item } from '../../core/shared/item.model';
 import { MetadataService } from '../../core/metadata/metadata.service';
 
 import { fadeInOut } from '../../shared/animations/fade';
-import { redirectToPageNotFoundOn404 } from '../../core/shared/operators';
+import { getAllSucceededRemoteDataPayload, redirectOn4xx } from '../../core/shared/operators';
 import { ViewMode } from '../../core/shared/view-mode.model';
+import { AuthService } from '../../core/auth/auth.service';
+import { getItemPageRoute } from '../item-page-routing-paths';
 
 /**
  * This component renders a simple item page.
@@ -43,11 +45,17 @@ export class ItemPageComponent implements OnInit {
    */
   viewMode = ViewMode.StandalonePage;
 
+  /**
+   * Route to the item's page
+   */
+  itemPageRoute$: Observable<string>;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private items: ItemDataService,
     private metadataService: MetadataService,
+    private authService: AuthService,
   ) { }
 
   /**
@@ -55,9 +63,13 @@ export class ItemPageComponent implements OnInit {
    */
   ngOnInit(): void {
     this.itemRD$ = this.route.data.pipe(
-      map((data) => data.item as RemoteData<Item>),
-      redirectToPageNotFoundOn404(this.router)
+      map((data) => data.dso as RemoteData<Item>),
+      redirectOn4xx(this.router, this.authService)
     );
     this.metadataService.processRemoteData(this.itemRD$);
+    this.itemPageRoute$ = this.itemRD$.pipe(
+      getAllSucceededRemoteDataPayload(),
+      map((item) => getItemPageRoute(item))
+    );
   }
 }

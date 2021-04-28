@@ -26,85 +26,159 @@ import * as morgan from 'morgan';
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as compression from 'compression';
-import * as cookieParser from 'cookie-parser';
 import { join } from 'path';
 
-import { enableProdMode, NgModuleFactory, Type } from '@angular/core';
-
+import { enableProdMode } from '@angular/core';
+import { existsSync } from 'fs';
 import { REQUEST, RESPONSE } from '@nguniversal/express-engine/tokens';
 import { environment } from './src/environments/environment';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import { hasValue, hasNoValue } from './src/app/shared/empty.util';
+import { APP_BASE_HREF } from '@angular/common';
+import { UIServerConfig } from './src/config/ui-server-config.interface';
 
 /*
  * Set path for the browser application's dist folder
  */
 const DIST_FOLDER = join(process.cwd(), 'dist/browser');
 
+const indexHtml = existsSync(join(DIST_FOLDER, 'index.html')) ? 'index.html' : 'index';
+
 // * NOTE :: leave this as require() since this file is built Dynamically from webpack
-const { ServerAppModuleNgFactory, LAZY_MODULE_MAP, ngExpressEngine, provideModuleMap } = require('./dist/server/main');
+const { ServerAppModule, ngExpressEngine } = require('./dist/server/main');
 
-/*
- * Create a new express application
- */
-const app = express();
+const cookieParser = require('cookie-parser');
 
-/*
- * If production mode is enabled in the environment file:
- * - Enable Angular's production mode
- * - Enable compression for response bodies. See [compression](https://github.com/expressjs/compression)
- */
-if (environment.production) {
-  enableProdMode();
-  app.use(compression());
+// The Express app is exported so that it can be used by serverless Functions.
+export function app() {
+
+  /*
+   * Create a new express application
+   */
+  const server = express();
+
+
+  /*
+   * If production mode is enabled in the environment file:
+   * - Enable Angular's production mode
+   * - Enable compression for response bodies. See [compression](https://github.com/expressjs/compression)
+   */
+  if (environment.production) {
+    enableProdMode();
+    server.use(compression());
+  }
+
+  /*
+   * Enable request logging
+   * See [morgan](https://github.com/expressjs/morgan)
+   */
+  server.use(morgan('dev'));
+
+  /*
+   * Add cookie parser middleware
+   * See [morgan](https://github.com/expressjs/cookie-parser)
+   */
+  server.use(cookieParser());
+
+  /*
+   * Add parser for request bodies
+   * See [morgan](https://github.com/expressjs/body-parser)
+   */
+  server.use(bodyParser.json());
+
+  // Our Universal express-engine (found @ https://github.com/angular/universal/tree/master/modules/express-engine)
+  server.engine('html', (_, options, callback) =>
+    ngExpressEngine({
+      bootstrap: ServerAppModule,
+      providers: [
+        {
+          provide: REQUEST,
+          useValue: (options as any).req,
+        },
+        {
+          provide: RESPONSE,
+          useValue: (options as any).req.res,
+        },
+      ],
+    })(_, (options as any), callback)
+  );
+
+  /*
+   * Register the view engines for html and ejs
+   */
+  server.set('view engine', 'html');
+
+  /*
+   * Set views folder path to directory where template files are stored
+   */
+  server.set('views', DIST_FOLDER);
+
+  /**
+   * Proxy the sitemaps
+   */
+  server.use('/sitemap**', createProxyMiddleware({ target: `${environment.rest.baseUrl}/sitemaps`, changeOrigin: true }));
+
+  /**
+   * Checks if the rateLimiter property is present
+   * When it is present, the rateLimiter will be enabled. When it is undefined, the rateLimiter will be disabled.
+   */
+  if (hasValue((environment.ui as UIServerConfig).rateLimiter)) {
+    const RateLimit = require('express-rate-limit');
+    const limiter = new RateLimit({
+      windowMs: (environment.ui as UIServerConfig).rateLimiter.windowMs,
+      max: (environment.ui as UIServerConfig).rateLimiter.max
+    });
+    server.use(limiter);
+  }
+
+  /*
+   * Serve static resources (images, i18n messages, …)
+   */
+  server.get('*.*', cacheControl, express.static(DIST_FOLDER, { index: false }));
+
+  // Register the ngApp callback function to handle incoming requests
+  server.get('*', ngApp);
+
+  return server;
 }
 
 /*
- * Enable request logging
- * See [morgan](https://github.com/expressjs/morgan)
+ * The callback function to serve server side angular
  */
-app.use(morgan('dev'));
-
-/*
- * Add cookie parser middleware
- * See [morgan](https://github.com/expressjs/cookie-parser)
- */
-app.use(cookieParser());
-
-/*
- * Add parser for request bodies
- * See [morgan](https://github.com/expressjs/body-parser)
- */
-app.use(bodyParser.json());
-
-/*
- * Render html pages by running angular server side
- */
-app.engine('html', (_, options, callback) =>
-  ngExpressEngine({
-    bootstrap: ServerAppModuleNgFactory,
-    providers: [
-      {
-        provide: REQUEST,
-        useValue: (options as any).req,
-      },
-      {
-        provide: RESPONSE,
-        useValue: (options as any).req.res,
-      },
-      provideModuleMap(LAZY_MODULE_MAP)
-    ],
-  })(_, (options as any), callback)
-);
-
-/*
- * Register the view engines for html and ejs
- */
-app.set('view engine', 'ejs');
-app.set('view engine', 'html');
-
-/*
- * Set views folder path to directory where template files are stored
- */
-app.set('views', DIST_FOLDER);
+function ngApp(req, res) {
+  if (environment.universal.preboot) {
+    res.render(indexHtml, {
+      req,
+      res,
+      preboot: environment.universal.preboot,
+      async: environment.universal.async,
+      time: environment.universal.time,
+      baseUrl: environment.ui.nameSpace,
+      originUrl: environment.ui.baseUrl,
+      requestUrl: req.originalUrl,
+      providers: [{ provide: APP_BASE_HREF, useValue: req.baseUrl }]
+    }, (err, data) => {
+      if (hasNoValue(err) && hasValue(data)) {
+        res.send(data);
+      } else if (hasValue(err) && err.code === 'ERR_HTTP_HEADERS_SENT') {
+        // When this error occurs we can't fall back to CSR because the response has already been
+        // sent. These errors occur for various reasons in universal, not all of which are in our
+        // control to solve.
+        console.warn('Warning [ERR_HTTP_HEADERS_SENT]: Tried to set headers after they were sent to the client');
+      } else {
+        console.warn('Error in SSR, serving for direct CSR.');
+        if (hasValue(err)) {
+          console.warn('Error details : ', err);
+        }
+        res.sendFile(DIST_FOLDER + '/index.html');
+      }
+    });
+  } else {
+    // If preboot is disabled, just serve the client
+    console.log('Universal off, serving for direct CSR');
+    res.sendFile(DIST_FOLDER + '/index.html');
+  }
+}
 
 /*
  * Adds a cache control header to the response
@@ -115,71 +189,6 @@ function cacheControl(req, res, next) {
   res.header('Cache-Control', environment.cache.control || 'max-age=60');
   next();
 }
-
-/*
- * Serve static resources (images, i18n messages, …)
- */
-app.get('*.*', cacheControl, express.static(DIST_FOLDER, { index: false }));
-
-/*
- * The callback function to serve server side angular
- */
-function ngApp(req, res) {
-  // Object to be set to window.dspace when CSR is used
-  // this allows us to pass the info in the original request
-  // to the dspace7-angular instance running in the client's browser
-  const dspace = {
-    originalRequest: {
-      headers: req.headers,
-      body: req.body,
-      method: req.method,
-      params: req.params,
-      reportProgress: req.reportProgress,
-      withCredentials: req.withCredentials,
-      responseType: req.responseType,
-      urlWithParams: req.urlWithParams
-    }
-  };
-
-  // callback function for the case when SSR throws an error.
-  function onHandleError(parentZoneDelegate, currentZone, targetZone, error) {
-    if (!res._headerSent) {
-      console.warn('Error in SSR, serving for direct CSR. Error details : ', error);
-      res.sendFile('index.csr.ejs', {
-        root: DIST_FOLDER,
-        scripts: `<script>window.dspace = ${JSON.stringify(dspace)}</script>`
-      });
-    }
-  }
-
-  if (environment.universal.preboot) {
-    // If preboot is enabled, create a new zone for SSR, and
-    // register the error handler for when it throws an error
-    Zone.current.fork({ name: 'CSR fallback', onHandleError }).run(() => {
-      res.render(DIST_FOLDER + '/index.html', {
-        req,
-        res,
-        preboot: environment.universal.preboot,
-        async: environment.universal.async,
-        time: environment.universal.time,
-        baseUrl: environment.ui.nameSpace,
-        originUrl: environment.ui.baseUrl,
-        requestUrl: req.originalUrl
-      });
-    });
-  } else {
-    // If preboot is disabled, just serve the client side ejs template and pass it the required
-    // variables
-    console.log('Universal off, serving for direct CSR');
-    res.render('index-csr.ejs', {
-      root: DIST_FOLDER,
-      scripts: `<script>window.dspace = ${JSON.stringify(dspace)}</script>`
-    });
-  }
-}
-
-// Register the ngApp callback function to handle incoming requests
-app.get('*', ngApp);
 
 /*
  * Callback function for when the server has started
@@ -197,6 +206,17 @@ function createHttpsServer(keys) {
     key: keys.serviceKey,
     cert: keys.certificate
   }, app).listen(environment.ui.port, environment.ui.host, () => {
+    serverStarted();
+  });
+}
+
+function run() {
+  const port = environment.ui.port || 4000;
+  const host = environment.ui.host || '/';
+
+  // Start up the Node server
+  const server = app();
+  server.listen(port, host, () => {
     serverStarted();
   });
 }
@@ -229,8 +249,9 @@ if (environment.ui.ssl) {
       certificate: certificate
     });
   } else {
+    console.warn('Disabling certificate validation and proceeding with a self-signed certificate. If this is a production server, it is recommended that you configure a valid certificate instead.');
 
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // lgtm[js/disabling-certificate-validation]
 
     pem.createCertificate({
       days: 1,
@@ -240,7 +261,7 @@ if (environment.ui.ssl) {
     });
   }
 } else {
-  app.listen(environment.ui.port, environment.ui.host, () => {
-    serverStarted();
-  });
+  run();
 }
+
+export * from './src/main.server';

@@ -5,10 +5,10 @@ import { FormFieldModel } from '../models/form-field.model';
 import { isNotEmpty } from '../../../empty.util';
 import {
   DynamicRelationGroupModel,
-  DynamicRelationGroupModelConfig,
-  PLACEHOLDER_PARENT_METADATA
+  DynamicRelationGroupModelConfig
 } from '../ds-dynamic-form-ui/models/relation-group/dynamic-relation-group.model';
 import { FormRowModel } from '../../../../core/config/models/config-submission-form.model';
+import { PLACEHOLDER_PARENT_METADATA } from '../ds-dynamic-form-ui/ds-dynamic-form-constants';
 
 export class RelationGroupFieldParser extends FieldParser {
 
@@ -16,7 +16,7 @@ export class RelationGroupFieldParser extends FieldParser {
     const modelConfiguration: DynamicRelationGroupModelConfig = this.initModel(null, label);
 
     modelConfiguration.submissionId = this.submissionId;
-    modelConfiguration.scopeUUID = this.parserOptions.authorityUuid;
+    modelConfiguration.scopeUUID = this.parserOptions.collectionUUID;
     modelConfiguration.submissionScope = this.parserOptions.submissionScope;
     if (this.configData && this.configData.rows && this.configData.rows.length > 0) {
       modelConfiguration.formConfiguration = this.configData.rows;
@@ -31,7 +31,7 @@ export class RelationGroupFieldParser extends FieldParser {
           } else {
             modelConfiguration.relationFields.push(field.selectableMetadata[0].metadata);
           }
-        })
+        });
       });
     } else {
       throw new Error(`Configuration not valid: ${modelConfiguration.name}`);
@@ -48,7 +48,7 @@ export class RelationGroupFieldParser extends FieldParser {
           item[fieldId] = isNotEmpty(value) ? value : PLACEHOLDER_PARENT_METADATA;
         });
         modelConfiguration.value.push(item);
-      })
+      });
     }
     const cls = {
       element: {

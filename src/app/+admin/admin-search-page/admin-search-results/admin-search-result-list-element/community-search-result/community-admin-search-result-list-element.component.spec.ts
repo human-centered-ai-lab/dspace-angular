@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { TranslateModule } from '@ngx-translate/core';
@@ -9,8 +9,10 @@ import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
 import { CommunityAdminSearchResultListElementComponent } from './community-admin-search-result-list-element.component';
 import { CommunitySearchResult } from '../../../../../shared/object-collection/shared/community-search-result.model';
-import { getCommunityEditPath } from '../../../../../+community-page/community-page-routing.module';
 import { Community } from '../../../../../core/shared/community.model';
+import { getCommunityEditRoute } from '../../../../../+community-page/community-page-routing-paths';
+import { DSONameService } from '../../../../../core/breadcrumbs/dso-name.service';
+import { DSONameServiceMock } from '../../../../../shared/mocks/dso-name.service.mock';
 
 describe('CommunityAdminSearchResultListElementComponent', () => {
   let component: CommunityAdminSearchResultListElementComponent;
@@ -24,7 +26,8 @@ describe('CommunityAdminSearchResultListElementComponent', () => {
     searchResult.indexableObject = new Community();
     searchResult.indexableObject.uuid = id;
   }
-  beforeEach(async(() => {
+
+  beforeEach(waitForAsync(() => {
     init();
     TestBed.configureTestingModule({
       imports: [
@@ -32,7 +35,8 @@ describe('CommunityAdminSearchResultListElementComponent', () => {
         RouterTestingModule.withRoutes([])
       ],
       declarations: [CommunityAdminSearchResultListElementComponent],
-      providers: [{ provide: TruncatableService, useValue: {} }],
+      providers: [{ provide: TruncatableService, useValue: {} },
+        { provide: DSONameService, useClass: DSONameServiceMock }],
       schemas: [NO_ERRORS_SCHEMA]
     })
       .compileComponents();
@@ -55,6 +59,6 @@ describe('CommunityAdminSearchResultListElementComponent', () => {
   it('should render an edit button with the correct link', () => {
     const a = fixture.debugElement.query(By.css('a'));
     const link = a.nativeElement.href;
-    expect(link).toContain(getCommunityEditPath(id));
-  })
+    expect(link).toContain(getCommunityEditRoute(id));
+  });
 });

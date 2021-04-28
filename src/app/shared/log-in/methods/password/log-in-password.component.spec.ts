@@ -1,8 +1,9 @@
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { async, ComponentFixture, inject, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-
 import { By } from '@angular/platform-browser';
+
+import { provideMockStore } from '@ngrx/store/testing';
 import { Store, StoreModule } from '@ngrx/store';
 import { TranslateModule } from '@ngx-translate/core';
 
@@ -12,9 +13,10 @@ import { EPersonMock } from '../../../testing/eperson.mock';
 import { authReducer } from '../../../../core/auth/auth.reducer';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { AuthServiceStub } from '../../../testing/auth-service.stub';
-import { AppState } from '../../../../app.reducer';
+import { storeModuleConfig } from '../../../../app.reducer';
 import { AuthMethod } from '../../../../core/auth/models/auth.method';
 import { AuthMethodType } from '../../../../core/auth/models/auth.method-type';
+import { HardRedirectService } from '../../../../core/services/hard-redirect.service';
 
 describe('LogInPasswordComponent', () => {
 
@@ -22,24 +24,36 @@ describe('LogInPasswordComponent', () => {
   let fixture: ComponentFixture<LogInPasswordComponent>;
   let page: Page;
   let user: EPerson;
-
-  const authState = {
-    authenticated: false,
-    loaded: false,
-    loading: false,
-  };
+  let initialState: any;
+  let hardRedirectService: HardRedirectService;
 
   beforeEach(() => {
     user = EPersonMock;
+
+    hardRedirectService = jasmine.createSpyObj('hardRedirectService', {
+      getCurrentRoute: {}
+    });
+
+    initialState = {
+      core: {
+        auth: {
+          authenticated: false,
+          loaded: false,
+          blocking: false,
+          loading: false,
+          authMethods: []
+        }
+      }
+    };
   });
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     // refine the test module by declaring the test component
     TestBed.configureTestingModule({
       imports: [
         FormsModule,
         ReactiveFormsModule,
-        StoreModule.forRoot(authReducer),
+        StoreModule.forRoot({ auth: authReducer }, storeModuleConfig),
         TranslateModule.forRoot()
       ],
       declarations: [
@@ -47,7 +61,10 @@ describe('LogInPasswordComponent', () => {
       ],
       providers: [
         { provide: AuthService, useClass: AuthServiceStub },
-        { provide: 'authMethodProvider', useValue: new AuthMethod(AuthMethodType.Password) }
+        { provide: 'authMethodProvider', useValue: new AuthMethod(AuthMethodType.Password) },
+        { provide: 'isStandalonePage', useValue: true },
+        { provide: HardRedirectService, useValue: hardRedirectService },
+        provideMockStore({ initialState }),
       ],
       schemas: [
         CUSTOM_ELEMENTS_SCHEMA
@@ -57,13 +74,7 @@ describe('LogInPasswordComponent', () => {
 
   }));
 
-  beforeEach(inject([Store], (store: Store<AppState>) => {
-    store
-      .subscribe((state) => {
-        (state as any).core = Object.create({});
-        (state as any).core.auth = authState;
-      });
-
+  beforeEach(() => {
     // create component and test fixture
     fixture = TestBed.createComponent(LogInPasswordComponent);
 
@@ -78,7 +89,7 @@ describe('LogInPasswordComponent', () => {
       page.addPageElements();
     });
 
-  }));
+  });
 
   it('should create a FormGroup comprised of FormControls', () => {
     fixture.detectChanges();

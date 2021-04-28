@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Observable } from 'rxjs/internal/Observable';
+import { Observable } from 'rxjs';
 import { BitstreamDataService } from '../../../../../core/data/bitstream-data.service';
 import { Bitstream } from '../../../../../core/shared/bitstream.model';
 import { getFirstSucceededRemoteDataPayload } from '../../../../../core/shared/operators';
@@ -19,8 +19,10 @@ import { MetadataValue } from '../../../../../core/shared/metadata.models';
 import { ItemDataService } from '../../../../../core/data/item-data.service';
 import { SelectableListService } from '../../../../../shared/object-list/selectable-list/selectable-list.service';
 import { NameVariantModalComponent } from '../../name-variant-modal/name-variant-modal.component';
+import { DSONameService } from '../../../../../core/breadcrumbs/dso-name.service';
 
-@listableObjectComponent('OrgUnitSearchResult', ViewMode.ListElement, Context.SubmissionModal)
+@listableObjectComponent('OrgUnitSearchResult', ViewMode.ListElement, Context.EntitySearchModal)
+@listableObjectComponent('OrgUnitSearchResult', ViewMode.ListElement, Context.EntitySearchModalWithNameVariants)
 @Component({
   selector: 'ds-person-search-result-list-submission-element',
   styleUrls: ['./org-unit-search-result-list-submission-element.component.scss'],
@@ -34,6 +36,7 @@ export class OrgUnitSearchResultListSubmissionElementComponent extends SearchRes
   allSuggestions: string[];
   selectedName: string;
   alternativeField = 'dc.title.alternative';
+  useNameVariants = false;
 
   constructor(protected truncatableService: TruncatableService,
               private relationshipService: RelationshipService,
@@ -42,22 +45,29 @@ export class OrgUnitSearchResultListSubmissionElementComponent extends SearchRes
               private modalService: NgbModal,
               private itemDataService: ItemDataService,
               private bitstreamDataService: BitstreamDataService,
-              private selectableListService: SelectableListService) {
-    super(truncatableService);
+              private selectableListService: SelectableListService,
+              protected dsoNameService: DSONameService
+  ) {
+    super(truncatableService, dsoNameService);
   }
 
   ngOnInit() {
     super.ngOnInit();
-    const defaultValue = this.firstMetadataValue('organization.legalName');
-    const alternatives = this.allMetadataValues(this.alternativeField);
-    this.allSuggestions = [defaultValue, ...alternatives];
 
-    this.relationshipService.getNameVariant(this.listID, this.dso.uuid)
-      .pipe(take(1))
-      .subscribe((nameVariant: string) => {
-          this.selectedName = nameVariant || defaultValue;
-        }
-      );
+    this.useNameVariants = this.context === Context.EntitySearchModalWithNameVariants;
+
+    if (this.useNameVariants) {
+      const defaultValue = this.firstMetadataValue('organization.legalName');
+      const alternatives = this.allMetadataValues(this.alternativeField);
+      this.allSuggestions = [defaultValue, ...alternatives];
+
+      this.relationshipService.getNameVariant(this.listID, this.dso.uuid)
+        .pipe(take(1))
+        .subscribe((nameVariant: string) => {
+            this.selectedName = nameVariant || defaultValue;
+          }
+        );
+    }
   }
 
   select(value) {
@@ -75,7 +85,7 @@ export class OrgUnitSearchResultListSubmissionElementComponent extends SearchRes
     if (!this.allSuggestions.includes(value)) {
       this.openModal(value)
         .then(() => {
-
+          // user clicked ok: store the name variant in the item
           const newName: MetadataValue = new MetadataValue();
           newName.value = value;
 
@@ -89,9 +99,12 @@ export class OrgUnitSearchResultListSubmissionElementComponent extends SearchRes
               },
             });
           this.itemDataService.update(updatedItem).pipe(take(1)).subscribe();
-        })
+        }).catch(() => {
+        // user clicked cancel: use the name variant only for this relation, no further action required
+      }).finally(() => {
+        this.select(value);
+      });
     }
-    this.select(value);
   }
 
   openModal(value): Promise<any> {

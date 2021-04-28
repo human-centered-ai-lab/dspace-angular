@@ -1,14 +1,11 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { DebugElement, NO_ERRORS_SCHEMA } from '@angular/core';
-import { of as observableOf } from 'rxjs';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EditItemSelectorComponent } from './edit-item-selector.component';
 import { Item } from '../../../../core/shared/item.model';
-import { RemoteData } from '../../../../core/data/remote-data';
 import { RouterStub } from '../../../testing/router.stub';
-import * as itemRouter from '../../../../+item-page/item-page-routing.module';
 import { MetadataValue } from '../../../../core/shared/metadata.models';
 import { createSuccessfulRemoteDataObject } from '../../../remote-data.utils';
 
@@ -23,9 +20,9 @@ describe('EditItemSelectorComponent', () => {
   const router = new RouterStub();
   const itemRD = createSuccessfulRemoteDataObject(item);
   const modalStub = jasmine.createSpyObj('modalStub', ['close']);
-  const editPath = 'testEditPath';
+  const editPath = '/items/1234-1234-1234-1234/edit';
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       imports: [TranslateModule.forRoot()],
       declarations: [EditItemSelectorComponent],
@@ -33,7 +30,15 @@ describe('EditItemSelectorComponent', () => {
         { provide: NgbActiveModal, useValue: modalStub },
         {
           provide: ActivatedRoute,
-          useValue: { root: { firstChild: { firstChild: { data: observableOf({ item: itemRD }) } } } }
+          useValue: {
+            root: {
+              snapshot: {
+                data: {
+                  dso: itemRD,
+                },
+              },
+            }
+          },
         },
         {
           provide: Router, useValue: router
@@ -45,10 +50,6 @@ describe('EditItemSelectorComponent', () => {
   }));
 
   beforeEach(() => {
-    spyOnProperty(itemRouter, 'getItemEditPath').and.callFake(() => {
-        return () => editPath;
-    });
-
     fixture = TestBed.createComponent(EditItemSelectorComponent);
     component = fixture.componentInstance;
     debugElement = fixture.debugElement;

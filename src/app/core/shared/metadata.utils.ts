@@ -156,7 +156,7 @@ export class Metadata {
     const outputKeys: string[] = [];
     for (const inputKey of inputKeys) {
       if (inputKey.includes('*')) {
-        const inputKeyRegex = new RegExp('^' + inputKey.replace('.', '\.').replace('*', '.*') + '$');
+        const inputKeyRegex = new RegExp('^' + inputKey.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$');
         for (const mapKey of Object.keys(mdMap)) {
           if (!outputKeys.includes(mapKey) && inputKeyRegex.test(mapKey)) {
             outputKeys.push(mapKey);
@@ -213,7 +213,7 @@ export class Metadata {
             delete (val as any).key;
             return val;
           }
-        )
+        );
       });
     return metadataMap;
   }
@@ -229,7 +229,7 @@ export class Metadata {
     if (isNotEmpty(mdMap[key])) {
       mdMap[key][0].value = value;
     } else {
-      mdMap[key] = [Object.assign(new MetadataValue(), { value: value })]
+      mdMap[key] = [Object.assign(new MetadataValue(), { value: value })];
     }
   }
 }

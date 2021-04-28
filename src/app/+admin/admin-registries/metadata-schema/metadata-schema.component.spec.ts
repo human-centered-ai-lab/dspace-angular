@@ -1,7 +1,7 @@
 import { MetadataSchemaComponent } from './metadata-schema.component';
-import { async, ComponentFixture, inject, TestBed } from '@angular/core/testing';
+import { ComponentFixture, inject, TestBed, waitForAsync } from '@angular/core/testing';
 import { of as observableOf } from 'rxjs';
-import { PaginatedList } from '../../../core/data/paginated-list';
+import { buildPaginatedList } from '../../../core/data/paginated-list.model';
 import { TranslateModule } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -22,6 +22,12 @@ import { RestResponse } from '../../../core/cache/response.models';
 import { MetadataSchema } from '../../../core/metadata/metadata-schema.model';
 import { MetadataField } from '../../../core/metadata/metadata-field.model';
 import { createSuccessfulRemoteDataObject$ } from '../../../shared/remote-data.utils';
+import { VarDirective } from '../../../shared/utils/var.directive';
+import { PaginationComponentOptions } from '../../../shared/pagination/pagination-component-options.model';
+import { SortDirection, SortOptions } from '../../../core/cache/models/sort-options.model';
+import { FindListOptions } from '../../../core/data/request.models';
+import { PaginationService } from '../../../core/pagination/pagination.service';
+import { PaginationServiceStub } from '../../../shared/testing/pagination-service.stub';
 
 describe('MetadataSchemaComponent', () => {
   let comp: MetadataSchemaComponent;
@@ -60,7 +66,7 @@ describe('MetadataSchemaComponent', () => {
       element: 'contributor',
       qualifier: 'advisor',
       scopeNote: null,
-      schema: mockSchemasList[0]
+      schema: createSuccessfulRemoteDataObject$(mockSchemasList[0])
     },
     {
       id: 2,
@@ -72,7 +78,7 @@ describe('MetadataSchemaComponent', () => {
       element: 'contributor',
       qualifier: 'author',
       scopeNote: null,
-      schema: mockSchemasList[0]
+      schema: createSuccessfulRemoteDataObject$(mockSchemasList[0])
     },
     {
       id: 3,
@@ -84,7 +90,7 @@ describe('MetadataSchemaComponent', () => {
       element: 'contributor',
       qualifier: 'editor',
       scopeNote: 'test scope note',
-      schema: mockSchemasList[1]
+      schema: createSuccessfulRemoteDataObject$(mockSchemasList[1])
     },
     {
       id: 4,
@@ -96,21 +102,24 @@ describe('MetadataSchemaComponent', () => {
       element: 'contributor',
       qualifier: 'illustrator',
       scopeNote: null,
-      schema: mockSchemasList[1]
+      schema: createSuccessfulRemoteDataObject$(mockSchemasList[1])
     }
   ];
-  const mockSchemas = createSuccessfulRemoteDataObject$(new PaginatedList(null, mockSchemasList));
+  const mockSchemas = createSuccessfulRemoteDataObject$(buildPaginatedList(null, mockSchemasList));
   /* tslint:disable:no-empty */
   const registryServiceStub = {
     getMetadataSchemas: () => mockSchemas,
-    getMetadataFieldsBySchema: (schema: MetadataSchema) => createSuccessfulRemoteDataObject$(new PaginatedList(null, mockFieldsList.filter((value) => value.schema === schema))),
-    getMetadataSchemaByName: (schemaName: string) => createSuccessfulRemoteDataObject$(mockSchemasList.filter((value) => value.prefix === schemaName)[0]),
+    getMetadataFieldsBySchema: (schema: MetadataSchema) => createSuccessfulRemoteDataObject$(buildPaginatedList(null, mockFieldsList.filter((value) => value.id === 3 || value.id === 4))),
+    getMetadataSchemaByPrefix: (schemaName: string) => createSuccessfulRemoteDataObject$(mockSchemasList.filter((value) => value.prefix === schemaName)[0]),
     getActiveMetadataField: () => observableOf(undefined),
     getSelectedMetadataFields: () => observableOf([]),
-    editMetadataField: (schema) => {},
-    cancelEditMetadataField: () => {},
+    editMetadataField: (schema) => {
+    },
+    cancelEditMetadataField: () => {
+    },
     deleteMetadataField: () => observableOf(new RestResponse(true, 200, 'OK')),
-    deselectAllMetadataField: () => {},
+    deselectAllMetadataField: () => {
+    },
     clearMetadataFieldRequests: () => observableOf(undefined)
   };
   /* tslint:enable:no-empty */
@@ -121,15 +130,18 @@ describe('MetadataSchemaComponent', () => {
     })
   });
 
-  beforeEach(async(() => {
+  const paginationService = new PaginationServiceStub();
+
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       imports: [CommonModule, RouterTestingModule.withRoutes([]), TranslateModule.forRoot(), NgbModule],
-      declarations: [MetadataSchemaComponent, PaginationComponent, EnumKeysPipe],
+      declarations: [MetadataSchemaComponent, PaginationComponent, EnumKeysPipe, VarDirective],
       providers: [
         { provide: RegistryService, useValue: registryServiceStub },
         { provide: ActivatedRoute, useValue: activatedRouteStub },
         { provide: HostWindowService, useValue: new HostWindowServiceStub(0) },
         { provide: Router, useValue: new RouterStub() },
+        { provide: PaginationService, useValue: paginationService },
         { provide: NotificationsService, useValue: new NotificationsServiceStub() }
       ],
       schemas: [NO_ERRORS_SCHEMA]
@@ -174,13 +186,13 @@ describe('MetadataSchemaComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should start editing the selected field', async(() => {
+    it('should start editing the selected field', waitForAsync(() => {
       fixture.whenStable().then(() => {
         expect(registryService.editMetadataField).toHaveBeenCalledWith(mockFieldsList[2] as MetadataField);
       });
     }));
 
-    it('should cancel editing the selected field when clicked again', async(() => {
+    it('should cancel editing the selected field when clicked again', waitForAsync(() => {
       spyOn(registryService, 'getActiveMetadataField').and.returnValue(observableOf(mockFieldsList[2] as MetadataField));
       spyOn(registryService, 'cancelEditMetadataField');
       row.click();
@@ -201,7 +213,7 @@ describe('MetadataSchemaComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should call deleteMetadataField with the selected id', async(() => {
+    it('should call deleteMetadataField with the selected id', waitForAsync(() => {
       fixture.whenStable().then(() => {
         expect(registryService.deleteMetadataField).toHaveBeenCalledWith(selectedFields[0].id);
       });

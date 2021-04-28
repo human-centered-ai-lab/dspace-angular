@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EditComColPageComponent } from '../../shared/comcol-forms/edit-comcol-page/edit-comcol-page.component';
 import { Collection } from '../../core/shared/collection.model';
-import { getCollectionPageRoute } from '../collection-page-routing.module';
+import { getCollectionPageRoute } from '../collection-page-routing-paths';
 
 /**
  * Component that represents the page where a user can edit an existing Collection
@@ -26,6 +26,6 @@ export class EditCollectionPageComponent extends EditComColPageComponent<Collect
    * @param collection The collection for which the url is requested
    */
   getPageUrl(collection: Collection): string {
-    return getCollectionPageRoute(collection.id)
+    return getCollectionPageRoute(collection.id);
   }
 }

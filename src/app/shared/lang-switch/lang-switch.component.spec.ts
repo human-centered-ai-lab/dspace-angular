@@ -1,13 +1,14 @@
-import { LangSwitchComponent } from './lang-switch.component';
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { DebugElement, NO_ERRORS_SCHEMA } from '@angular/core';
+import { By } from '@angular/platform-browser';
+
+import { Observable, of } from 'rxjs';
 import { TranslateLoader, TranslateModule, TranslateService } from '@ngx-translate/core';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+
+import { LangSwitchComponent } from './lang-switch.component';
 import { LangConfig } from '../../../config/lang-config.interface';
-import { Observable, of } from 'rxjs';
-import { By } from '@angular/platform-browser';
-import { CookieServiceMock } from '../mocks/cookie.service.mock';
-import { CookieService } from '../../core/services/cookie.service';
+import { LocaleService } from '../../core/locale/locale.service';
 
 // This test is completely independent from any message catalogs or keys in the codebase
 // The translation module is instantiated with these bogus messages that we aren't using anyway.
@@ -22,7 +23,7 @@ class CustomLoader implements TranslateLoader {
       'footer': {
         'copyright': 'copyright © 2002-{{ year }}',
         'link.dspace': 'DSpace software',
-        'link.duraspace': 'DuraSpace'
+        'link.lyrasis': 'LYRASIS'
       }
     });
   }
@@ -31,13 +32,16 @@ class CustomLoader implements TranslateLoader {
 /* tslint:enable:quotemark */
 /* tslint:enable:object-literal-key-quotes */
 
-let cookie: CookieService;
+let localService: any;
 
 describe('LangSwitchComponent', () => {
 
-  beforeEach(() => {
-    cookie = Object.assign(new CookieServiceMock());
-  });
+  function getMockLocaleService(): LocaleService {
+    return jasmine.createSpyObj('LocaleService', {
+      setCurrentLanguageCode: jasmine.createSpy('setCurrentLanguageCode'),
+      refreshAfterChangeLanguage: jasmine.createSpy('refreshAfterChangeLanguage')
+    });
+  }
 
   describe('with English and Deutsch activated, English as default', () => {
     let component: LangSwitchComponent;
@@ -48,7 +52,7 @@ describe('LangSwitchComponent', () => {
     let translate: TranslateService;
     let http: HttpTestingController;
 
-    beforeEach(async(() => {
+    beforeEach(waitForAsync(() => {
 
       const mockConfig = {
         languages: [{
@@ -72,16 +76,17 @@ describe('LangSwitchComponent', () => {
         schemas: [NO_ERRORS_SCHEMA],
         providers: [
           TranslateService,
-          { provide: CookieService, useValue: cookie }
+          { provide: LocaleService, useValue: getMockLocaleService() },
         ]
       }).compileComponents()
         .then(() => {
-          translate = TestBed.get(TranslateService);
+          translate = TestBed.inject(TranslateService);
           translate.addLangs(mockConfig.languages.filter((langConfig: LangConfig) => langConfig.active === true).map((a) => a.code));
           translate.setDefaultLang('en');
           translate.use('en');
-          http = TestBed.get(HttpTestingController);
+          http = TestBed.inject(HttpTestingController);
           fixture = TestBed.createComponent(LangSwitchComponent);
+          localService = TestBed.inject(LocaleService);
           component = fixture.componentInstance;
           de = fixture.debugElement;
           langSwitchElement = de.nativeElement;
@@ -93,12 +98,12 @@ describe('LangSwitchComponent', () => {
       expect(component).toBeDefined();
     });
 
-    it('should identify English as the label for the current active language in the component', async(() => {
+    it('should identify English as the label for the current active language in the component', waitForAsync(() => {
       fixture.detectChanges();
       expect(component.currentLangLabel()).toEqual('English');
     }));
 
-    it('should be initialized with more than one language active', async(() => {
+    it('should be initialized with more than one language active', waitForAsync(() => {
       fixture.detectChanges();
       expect(component.moreThanOneLanguage).toBeTruthy();
     }));
@@ -110,19 +115,16 @@ describe('LangSwitchComponent', () => {
     describe('when selecting a language', () => {
       beforeEach(() => {
         spyOn(translate, 'use');
-        spyOn(cookie, 'set');
         const langItem = fixture.debugElement.query(By.css('.dropdown-item')).nativeElement;
         langItem.click();
         fixture.detectChanges();
       });
 
-      it('should translate the app', () => {
-        expect(translate.use).toHaveBeenCalled();
+      it('should translate the app and set the client\'s language cookie', () => {
+        expect(localService.setCurrentLanguageCode).toHaveBeenCalled();
+        expect(localService.refreshAfterChangeLanguage).toHaveBeenCalled();
       });
 
-      it('should set the client\'s language cookie', () => {
-        expect(cookie.set).toHaveBeenCalled();
-      });
     });
   });
 
@@ -136,7 +138,7 @@ describe('LangSwitchComponent', () => {
     let translate: TranslateService;
     let http: HttpTestingController;
 
-    beforeEach(async(() => {
+    beforeEach(waitForAsync(() => {
 
       const mockConfig = {
         languages: [{
@@ -160,14 +162,14 @@ describe('LangSwitchComponent', () => {
         schemas: [NO_ERRORS_SCHEMA],
         providers: [
           TranslateService,
-          { provide: CookieService, useValue: cookie }
+          { provide: LocaleService, useValue: getMockLocaleService() }
         ]
       }).compileComponents();
-      translate = TestBed.get(TranslateService);
+      translate = TestBed.inject(TranslateService);
       translate.addLangs(mockConfig.languages.filter((MyLangConfig) => MyLangConfig.active === true).map((a) => a.code));
       translate.setDefaultLang('en');
       translate.use('en');
-      http = TestBed.get(HttpTestingController);
+      http = TestBed.inject(HttpTestingController);
     }));
 
     beforeEach(() => {

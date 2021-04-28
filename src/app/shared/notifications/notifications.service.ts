@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 
 import { of as observableOf } from 'rxjs';
 import { first } from 'rxjs/operators';
@@ -75,7 +75,7 @@ export class NotificationsService {
     this.translate.get(hrefTranslateLabel)
       .pipe(first())
       .subscribe((hrefMsg) => {
-        const anchor = `<a class="btn btn-link p-0 m-0" href="${href}" >
+        const anchor = `<a class="align-baseline btn btn-link p-0 m-0" href="${href}" >
                         <strong>${hrefMsg}</strong>
                       </a>`;
         const interpolateParams = Object.create({});

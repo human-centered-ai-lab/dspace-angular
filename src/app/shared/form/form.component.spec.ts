@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { async, ComponentFixture, inject, TestBed, } from '@angular/core/testing';
+import { ComponentFixture, inject, TestBed, waitForAsync, } from '@angular/core/testing';
 import { CommonModule } from '@angular/common';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -92,7 +92,6 @@ function init() {
       groupFactory: () => {
         return [
           new DynamicInputModel({
-
             id: 'bootstrapArrayGroupInput',
             placeholder: 'example array group input',
             readOnly: false
@@ -120,7 +119,8 @@ function init() {
         dc_identifier_issn: null
       },
       valid: false,
-      errors: []
+      errors: [],
+      touched: {}
     }
   };
 
@@ -132,8 +132,8 @@ describe('FormComponent test suite', () => {
   let testFixture: ComponentFixture<TestComponent>;
   let formFixture: ComponentFixture<FormComponent>;
 
-  // async beforeEach
-  beforeEach(async(() => {
+  // waitForAsync beforeEach
+  beforeEach(waitForAsync(() => {
     init();
     /* TODO make sure these files use mocks instead of real services/components https://github.com/DSpace/dspace-angular/issues/281 */
     TestBed.configureTestingModule({
@@ -170,7 +170,8 @@ describe('FormComponent test suite', () => {
         <ds-form *ngIf="formModel" #formRef="formComponent"
                  [formId]="formId"
                  [formModel]="formModel"
-                 [displaySubmit]="displaySubmit"></ds-form>`;
+                 [displaySubmit]="displaySubmit"
+                 [displayCancel]="displayCancel"></ds-form>`;
 
       testFixture = createTestComponent(html, TestComponent) as ComponentFixture<TestComponent>;
       testComp = testFixture.componentInstance;
@@ -192,11 +193,12 @@ describe('FormComponent test suite', () => {
     beforeEach(() => {
 
       formFixture = TestBed.createComponent(FormComponent);
-      store = TestBed.get(Store);
+      store = TestBed.inject(Store as any);
       formComp = formFixture.componentInstance; // FormComponent test instance
       formComp.formId = 'testForm';
       formComp.formModel = TEST_FORM_MODEL;
       formComp.displaySubmit = false;
+      formComp.displayCancel = false;
       form = new BehaviorSubject(formState);
       valid = new BehaviorSubject(false);
       spyOn((formComp as any).formService, 'getForm').and.returnValue(form);
@@ -362,7 +364,7 @@ describe('FormComponent test suite', () => {
 
       spyOn((formComp as any).formService, 'validateAllFormFields');
 
-      form.next(formState.testForm)
+      form.next(formState.testForm);
       formFixture.detectChanges();
 
       formComp.onSubmit();
@@ -383,11 +385,12 @@ describe('FormComponent test suite', () => {
     init();
     beforeEach(() => {
       formFixture = TestBed.createComponent(FormComponent);
-      store = TestBed.get(Store);
+      store = TestBed.inject(Store as any);
       formComp = formFixture.componentInstance; // FormComponent test instance
       formComp.formId = 'testFormArray';
       formComp.formModel = TEST_FORM_MODEL_WITH_ARRAY;
       formComp.displaySubmit = false;
+      formComp.displayCancel = false;
       formFixture.detectChanges();
       spyOn(store, 'dispatch');
     });
@@ -430,7 +433,7 @@ describe('FormComponent test suite', () => {
 
       expect(formComp.removeArrayItem.emit).toHaveBeenCalled();
     }));
-  })
+  });
 });
 
 // declare a test component
@@ -443,6 +446,7 @@ class TestComponent {
   public formId;
   public formModel: DynamicFormControlModel[];
   public displaySubmit = false;
+  public displayCancel = false;
 
   constructor() {
     this.formId = 'testForm';

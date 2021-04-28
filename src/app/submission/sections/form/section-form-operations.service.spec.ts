@@ -1,4 +1,4 @@
-import { async, TestBed } from '@angular/core/testing';
+import { TestBed, waitForAsync } from '@angular/core/testing';
 
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import {
@@ -27,7 +27,7 @@ import {
   mockRowGroupModel
 } from '../../../shared/mocks/form-models.mock';
 import { FormFieldMetadataValueObject } from '../../../shared/form/builder/models/form-field-metadata-value.model';
-import { AuthorityValue } from '../../../core/integration/models/authority.value';
+import { VocabularyEntry } from '../../../core/submission/vocabularies/models/vocabulary-entry.model';
 
 describe('SectionFormOperationsService test suite', () => {
   let formBuilderService: any;
@@ -35,10 +35,10 @@ describe('SectionFormOperationsService test suite', () => {
   let serviceAsAny: any;
 
   const jsonPatchOpBuilder: any = jasmine.createSpyObj('jsonPatchOpBuilder', {
-    add: jasmine.createSpy('add'),
-    replace: jasmine.createSpy('replace'),
-    remove: jasmine.createSpy('remove'),
-  });
+      add: jasmine.createSpy('add'),
+      replace: jasmine.createSpy('replace'),
+      remove: jasmine.createSpy('remove'),
+    });
   const pathCombiner = new JsonPatchOperationPathCombiner('sections', 'test');
 
   const dynamicFormControlChangeEvent: DynamicFormControlEvent = {
@@ -59,7 +59,7 @@ describe('SectionFormOperationsService test suite', () => {
     type: 'remove'
   };
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       imports: [
         TranslateModule.forRoot({
@@ -78,9 +78,9 @@ describe('SectionFormOperationsService test suite', () => {
   }));
 
   beforeEach(() => {
-    service = TestBed.get(SectionFormOperationsService);
+    service = TestBed.inject(SectionFormOperationsService);
     serviceAsAny = service;
-    formBuilderService = TestBed.get(FormBuilderService);
+    formBuilderService = TestBed.inject(FormBuilderService);
   });
 
   describe('dispatchOperationsFromEvent', () => {
@@ -365,7 +365,7 @@ describe('SectionFormOperationsService test suite', () => {
       event = Object.assign({}, dynamicFormControlChangeEvent, {
         model: mockInputWithLanguageAndAuthorityModel
       });
-      expectedValue = Object.assign(new AuthorityValue(), mockInputWithLanguageAndAuthorityModel.value, {language: mockInputWithLanguageAndAuthorityModel.language});
+      expectedValue = Object.assign(new VocabularyEntry(), mockInputWithLanguageAndAuthorityModel.value, {language: mockInputWithLanguageAndAuthorityModel.language});
 
       expect(service.getFieldValueFromChangeEvent(event)).toEqual(expectedValue);
 
@@ -373,7 +373,7 @@ describe('SectionFormOperationsService test suite', () => {
         model: mockInputWithLanguageAndAuthorityArrayModel
       });
       expectedValue = [
-        Object.assign(new AuthorityValue(), mockInputWithLanguageAndAuthorityArrayModel.value[0],
+        Object.assign(new VocabularyEntry(), mockInputWithLanguageAndAuthorityArrayModel.value[0],
         { language: mockInputWithLanguageAndAuthorityArrayModel.language }
         )
       ];
@@ -665,7 +665,7 @@ describe('SectionFormOperationsService test suite', () => {
       spyOn(service, 'getFieldPathFromEvent').and.returnValue('path/1');
       spyOn(service, 'getFieldPathSegmentedFromChangeEvent').and.returnValue('path');
       spyOn(service, 'getFieldValueFromChangeEvent').and.returnValue(new FormFieldMetadataValueObject('test'));
-      spyOn(service, 'getArrayIndexFromEvent').and.returnValue(1);
+      spyOn(service, 'getArrayIndexFromEvent').and.returnValue(0);
       spyOn(serviceAsAny, 'getValueMap');
       spyOn(serviceAsAny, 'dispatchOperationsFromMap');
       formBuilderService.isQualdropGroup.and.returnValue(false);
@@ -676,8 +676,10 @@ describe('SectionFormOperationsService test suite', () => {
       serviceAsAny.dispatchOperationsFromChangeEvent(pathCombiner, event, previousValue, false);
 
       expect(jsonPatchOpBuilder.add).toHaveBeenCalledWith(
-        pathCombiner.getPath('path/1'),
-        new FormFieldMetadataValueObject('test'));
+        pathCombiner.getPath('path'),
+        new FormFieldMetadataValueObject('test'),
+        true
+      );
     });
   });
 
@@ -756,6 +758,6 @@ describe('SectionFormOperationsService test suite', () => {
 
       expect(jsonPatchOpBuilder.remove).toHaveBeenCalledWith(pathCombiner.getPath('path'));
     });
-  })
+  });
 
 });

@@ -74,8 +74,8 @@ describe('AuthEffects', () => {
       ],
     });
 
-    authEffects = TestBed.get(AuthEffects);
-    store = TestBed.get(Store);
+    authEffects = TestBed.inject(AuthEffects);
+    store = TestBed.inject(Store as any);
   });
 
   describe('authenticate$', () => {
@@ -150,7 +150,8 @@ describe('AuthEffects', () => {
 
   describe('authenticatedSuccess$', () => {
 
-    it('should return a RETRIEVE_AUTHENTICATED_EPERSON action in response to a AUTHENTICATED_SUCCESS action', () => {
+    it('should return a RETRIEVE_AUTHENTICATED_EPERSON action in response to a AUTHENTICATED_SUCCESS action', (done) => {
+      spyOn((authEffects as any).authService, 'storeToken');
       actions = hot('--a-', {
         a: {
           type: AuthActionTypes.AUTHENTICATED_SUCCESS, payload: {
@@ -163,8 +164,14 @@ describe('AuthEffects', () => {
 
       const expected = cold('--b-', { b: new RetrieveAuthenticatedEpersonAction(EPersonMock._links.self.href) });
 
+      authEffects.authenticatedSuccess$.subscribe(() => {
+        expect(authServiceStub.storeToken).toHaveBeenCalledWith(token);
+      });
+
       expect(authEffects.authenticatedSuccess$).toBeObservable(expected);
+      done();
     });
+
   });
 
   describe('checkToken$', () => {
@@ -190,7 +197,7 @@ describe('AuthEffects', () => {
 
         expect(authEffects.checkToken$).toBeObservable(expected);
       });
-    })
+    });
   });
 
   describe('checkTokenCookie$', () => {
@@ -233,7 +240,7 @@ describe('AuthEffects', () => {
 
         expect(authEffects.checkTokenCookie$).toBeObservable(expected);
       });
-    })
+    });
   });
 
   describe('retrieveAuthenticatedEperson$', () => {
@@ -289,7 +296,7 @@ describe('AuthEffects', () => {
 
         expect(authEffects.refreshToken$).toBeObservable(expected);
       });
-    })
+    });
   });
 
   describe('retrieveToken$', () => {
@@ -347,7 +354,7 @@ describe('AuthEffects', () => {
 
         expect(authEffects.logOut$).toBeObservable(expected);
       });
-    })
+    });
   });
 
   describe('retrieveMethods$', () => {
@@ -372,7 +379,7 @@ describe('AuthEffects', () => {
 
         expect(authEffects.retrieveMethods$).toBeObservable(expected);
       });
-    })
+    });
   });
 
   describe('clearInvalidTokenOnRehydrate$', () => {

@@ -2,13 +2,12 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { BrowserModule, makeStateKey, TransferState } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { RouterModule } from '@angular/router';
 import { REQUEST } from '@nguniversal/express-engine/tokens';
 
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { TranslateJson5HttpLoader } from '../../ngx-translate-loaders/translate-json5-http.loader';
 
-import { IdlePreload, IdlePreloadModule } from 'angular-idle-preload';
+import { IdlePreloadModule } from 'angular-idle-preload';
 
 import { AppComponent } from '../../app/app.component';
 
@@ -21,6 +20,19 @@ import { AuthService } from '../../app/core/auth/auth.service';
 import { Angulartics2RouterlessModule } from 'angulartics2/routerlessmodule';
 import { SubmissionService } from '../../app/submission/submission.service';
 import { StatisticsModule } from '../../app/statistics/statistics.module';
+import { BrowserKlaroService } from '../../app/shared/cookies/browser-klaro.service';
+import { KlaroService } from '../../app/shared/cookies/klaro.service';
+import { HardRedirectService } from '../../app/core/services/hard-redirect.service';
+import {
+  BrowserHardRedirectService,
+  locationProvider,
+  LocationToken
+} from '../../app/core/services/browser-hard-redirect.service';
+import { LocaleService } from '../../app/core/locale/locale.service';
+import { GoogleAnalyticsService } from '../../app/statistics/google-analytics.service';
+import { RouterModule, NoPreloading } from '@angular/router';
+import { AuthRequestService } from '../../app/core/auth/auth-request.service';
+import { BrowserAuthRequestService } from '../../app/core/auth/browser-auth-request.service';
 
 export const REQ_KEY = makeStateKey<string>('req');
 
@@ -44,8 +56,9 @@ export function getRequest(transferState: TransferState): any {
     RouterModule.forRoot([], {
       // enableTracing: true,
       useHash: false,
-      preloadingStrategy:
-      IdlePreload
+      scrollPositionRestoration: 'enabled',
+      anchorScrolling: 'enabled',
+      preloadingStrategy: NoPreloading
     }),
     StatisticsModule.forRoot(),
     Angulartics2RouterlessModule.forRoot(),
@@ -75,9 +88,33 @@ export function getRequest(transferState: TransferState): any {
       useClass: ClientCookieService
     },
     {
+      provide: KlaroService,
+      useClass: BrowserKlaroService
+    },
+    {
       provide: SubmissionService,
       useClass: SubmissionService
-    }
+    },
+    {
+      provide: LocaleService,
+      useClass: LocaleService
+    },
+    {
+      provide: HardRedirectService,
+      useClass: BrowserHardRedirectService,
+    },
+    {
+      provide: GoogleAnalyticsService,
+      useClass: GoogleAnalyticsService,
+    },
+    {
+      provide: AuthRequestService,
+      useClass: BrowserAuthRequestService,
+    },
+    {
+      provide: LocationToken,
+      useFactory: locationProvider,
+    },
   ]
 })
 export class BrowserAppModule {

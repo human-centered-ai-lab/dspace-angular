@@ -1,26 +1,17 @@
 import { Injectable, Injector } from '@angular/core';
-import {
-  DYNAMIC_FORM_CONTROL_TYPE_ARRAY,
-  DynamicFormGroupModelConfig
-} from '@ng-dynamic-forms/core';
+
+import { DYNAMIC_FORM_CONTROL_TYPE_ARRAY, DynamicFormGroupModelConfig } from '@ng-dynamic-forms/core';
 import { uniqueId } from 'lodash';
 
-import { IntegrationSearchOptions } from '../../../../core/integration/models/integration-options.model';
 import { isEmpty } from '../../../empty.util';
 import { DynamicRowGroupModel } from '../ds-dynamic-form-ui/models/ds-dynamic-row-group-model';
-import { DYNAMIC_FORM_CONTROL_TYPE_RELATION_GROUP } from '../ds-dynamic-form-ui/models/relation-group/dynamic-relation-group.model';
 import { FormFieldModel } from '../models/form-field.model';
-import {
-  CONFIG_DATA,
-  FieldParser,
-  INIT_FORM_VALUES,
-  PARSER_OPTIONS,
-  SUBMISSION_ID
-} from './field-parser';
+import { CONFIG_DATA, FieldParser, INIT_FORM_VALUES, PARSER_OPTIONS, SUBMISSION_ID } from './field-parser';
 import { ParserFactory } from './parser-factory';
 import { ParserOptions } from './parser-options';
 import { ParserType } from './parser-type';
 import { setLayout } from './parser.utils';
+import { DYNAMIC_FORM_CONTROL_TYPE_RELATION_GROUP } from '../ds-dynamic-form-ui/ds-dynamic-form-constants';
 
 export const ROW_ID_PREFIX = 'df-row-group-config-';
 
@@ -48,8 +39,6 @@ export class RowParser {
       group: [],
     };
 
-    const authorityOptions = new IntegrationSearchOptions(scopeUUID);
-
     const scopedFields: FormFieldModel[] = this.filterScopedFields(rowData.fields, submissionScope);
 
     const layoutDefaultGridClass = ' col-sm-' + Math.trunc(12 / scopedFields.length);
@@ -58,7 +47,7 @@ export class RowParser {
     const parserOptions: ParserOptions = {
       readOnly: readOnly,
       submissionScope: submissionScope,
-      authorityUuid: authorityOptions.uuid
+      collectionUUID: scopeUUID
     };
 
     // Iterate over row's fields
@@ -101,7 +90,7 @@ export class RowParser {
             fieldModel.forEach((model) => {
               parsedResult = model;
               return;
-            })
+            });
           } else {
             setLayout(fieldModel, 'grid', 'host', layoutFieldClass);
             config.group.push(fieldModel);
@@ -119,7 +108,7 @@ export class RowParser {
       };
       const groupModel = new DynamicRowGroupModel(config, clsGroup);
       if (Array.isArray(parsedResult)) {
-        parsedResult.push(groupModel)
+        parsedResult.push(groupModel);
       } else {
         parsedResult = groupModel;
       }

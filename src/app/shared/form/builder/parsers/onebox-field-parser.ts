@@ -12,9 +12,9 @@ import { FormFieldMetadataValueObject } from '../models/form-field-metadata-valu
 import { isNotEmpty } from '../../../empty.util';
 import { DsDynamicInputModel, DsDynamicInputModelConfig } from '../ds-dynamic-form-ui/models/ds-dynamic-input.model';
 import {
-  DsDynamicTypeaheadModelConfig,
-  DynamicTypeaheadModel
-} from '../ds-dynamic-form-ui/models/typeahead/dynamic-typeahead.model';
+  DsDynamicOneboxModelConfig,
+  DynamicOneboxModel
+} from '../ds-dynamic-form-ui/models/onebox/dynamic-onebox.model';
 
 export class OneboxFieldParser extends FieldParser {
 
@@ -59,7 +59,7 @@ export class OneboxFieldParser extends FieldParser {
       this.setLabel(inputSelectGroup, label);
       inputSelectGroup.required = isNotEmpty(this.configData.mandatory);
 
-      const selectModelConfig: DynamicSelectModelConfig<any> = this.initModel(newId + QUALDROP_METADATA_SUFFIX, label, false);
+      const selectModelConfig: DynamicSelectModelConfig<any> = this.initModel(newId + QUALDROP_METADATA_SUFFIX, label, false, false);
       selectModelConfig.hint = null;
       this.setOptions(selectModelConfig);
       if (isNotEmpty(fieldValue)) {
@@ -67,7 +67,7 @@ export class OneboxFieldParser extends FieldParser {
       }
       inputSelectGroup.group.push(new DynamicSelectModel(selectModelConfig, clsSelect));
 
-      const inputModelConfig: DsDynamicInputModelConfig = this.initModel(newId + QUALDROP_VALUE_SUFFIX, label, false);
+      const inputModelConfig: DsDynamicInputModelConfig = this.initModel(newId + QUALDROP_VALUE_SUFFIX, label, false, false);
       inputModelConfig.hint = null;
       this.setValues(inputModelConfig, fieldValue);
       inputSelectGroup.readOnly = selectModelConfig.disabled && inputModelConfig.readOnly;
@@ -75,12 +75,12 @@ export class OneboxFieldParser extends FieldParser {
       inputSelectGroup.group.push(new DsDynamicInputModel(inputModelConfig, clsInput));
 
       return new DynamicQualdropModel(inputSelectGroup, clsGroup);
-    } else if (this.configData.selectableMetadata[0].authority) {
-      const typeaheadModelConfig: DsDynamicTypeaheadModelConfig = this.initModel(null, label);
-      this.setAuthorityOptions(typeaheadModelConfig, this.parserOptions.authorityUuid);
-      this.setValues(typeaheadModelConfig, fieldValue, true);
+    } else if (this.configData.selectableMetadata[0].controlledVocabulary) {
+      const oneboxModelConfig: DsDynamicOneboxModelConfig = this.initModel(null, label);
+      this.setVocabularyOptions(oneboxModelConfig);
+      this.setValues(oneboxModelConfig, fieldValue, true);
 
-      return new DynamicTypeaheadModel(typeaheadModelConfig);
+      return new DynamicOneboxModel(oneboxModelConfig);
     } else {
       const inputModelConfig: DsDynamicInputModelConfig = this.initModel(null, label);
       this.setValues(inputModelConfig, fieldValue);

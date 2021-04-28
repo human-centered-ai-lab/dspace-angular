@@ -10,7 +10,7 @@ import { RegistryService } from '../../../../core/registry/registry.service';
 import { FormBuilderService } from '../../../../shared/form/builder/form-builder.service';
 import { take } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
-import { combineLatest } from 'rxjs/internal/observable/combineLatest';
+import { combineLatest } from 'rxjs';
 import { MetadataSchema } from '../../../../core/metadata/metadata-schema.model';
 
 @Component({
@@ -101,14 +101,19 @@ export class MetadataSchemaFormComponent implements OnInit, OnDestroy {
           required: true,
         });
       this.formModel = [
-        this.namespace,
-        this.name
+        new DynamicFormGroupModel(
+          {
+            id: 'metadatadataschemagroup',
+            group:[this.namespace, this.name]
+          })
       ];
       this.formGroup = this.formBuilderService.createFormGroup(this.formModel);
       this.registryService.getActiveMetadataSchema().subscribe((schema) => {
         this.formGroup.patchValue({
-          name: schema != null ? schema.prefix : '',
-          namespace: schema != null ? schema.namespace : ''
+          metadatadataschemagroup:{
+            name: schema != null ? schema.prefix : '',
+            namespace: schema != null ? schema.namespace : ''
+          }
         });
       });
     });
@@ -128,6 +133,7 @@ export class MetadataSchemaFormComponent implements OnInit, OnDestroy {
    * Emit the updated/created schema using the EventEmitter submitForm
    */
   onSubmit() {
+    this.registryService.clearMetadataSchemaRequests().subscribe();
     this.registryService.getActiveMetadataSchema().pipe(take(1)).subscribe(
       (schema) => {
         const values = {
@@ -139,7 +145,7 @@ export class MetadataSchemaFormComponent implements OnInit, OnDestroy {
             this.submitForm.emit(newSchema);
           });
         } else {
-          this.registryService.createOrUpdateMetadataSchema(Object.assign(new MetadataSchema(), {
+          this.registryService.createOrUpdateMetadataSchema(Object.assign(new MetadataSchema(), schema, {
             id: schema.id,
             prefix: (values.prefix ? values.prefix : schema.prefix),
             namespace: (values.namespace ? values.namespace : schema.namespace)
@@ -148,6 +154,7 @@ export class MetadataSchemaFormComponent implements OnInit, OnDestroy {
           });
         }
         this.clearFields();
+        this.registryService.cancelEditMetadataSchema();
       }
     );
   }
@@ -157,8 +164,10 @@ export class MetadataSchemaFormComponent implements OnInit, OnDestroy {
    */
   clearFields() {
     this.formGroup.patchValue({
-      prefix: '',
-      namespace: ''
+      metadatadataschemagroup:{
+        prefix: '',
+        namespace: ''
+      }
     });
   }
 

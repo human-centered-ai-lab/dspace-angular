@@ -1,7 +1,7 @@
 import { FormFieldModel } from '../models/form-field.model';
 import { OneboxFieldParser } from './onebox-field-parser';
 import { DynamicQualdropModel } from '../ds-dynamic-form-ui/models/ds-dynamic-qualdrop.model';
-import { DynamicTypeaheadModel } from '../ds-dynamic-form-ui/models/typeahead/dynamic-typeahead.model';
+import { DynamicOneboxModel } from '../ds-dynamic-form-ui/models/onebox/dynamic-onebox.model';
 import { DsDynamicInputModel } from '../ds-dynamic-form-ui/models/ds-dynamic-input.model';
 import { ParserOptions } from './parser-options';
 
@@ -15,12 +15,12 @@ describe('OneboxFieldParser test suite', () => {
   const parserOptions: ParserOptions = {
     readOnly: false,
     submissionScope: 'testScopeUUID',
-    authorityUuid: null
+    collectionUUID: null
   };
 
   beforeEach(() => {
     field1 = {
-      input: {type: 'onebox'},
+      input: { type: 'onebox' },
       label: 'Title',
       mandatory: 'false',
       repeatable: false,
@@ -28,7 +28,7 @@ describe('OneboxFieldParser test suite', () => {
       selectableMetadata: [
         {
           metadata: 'title',
-          authority: 'EVENTAuthority',
+          controlledVocabulary: 'EVENTAuthority',
           closed: false
         }
       ],
@@ -37,26 +37,26 @@ describe('OneboxFieldParser test suite', () => {
 
     field2 = {
       hints: 'If the item has any identification numbers or codes associated with↵	it, please enter the types and the actual numbers or codes.',
-      input: {type: 'onebox'},
+      input: { type: 'onebox' },
       label: 'Identifiers',
       languageCodes: [],
       mandatory: 'false',
       repeatable: false,
       selectableMetadata: [
-        {metadata: 'dc.identifier.issn', label: 'ISSN'},
-        {metadata: 'dc.identifier.other', label: 'Other'},
-        {metadata: 'dc.identifier.ismn', label: 'ISMN'},
-        {metadata: 'dc.identifier.govdoc', label: 'Gov\'t Doc #'},
-        {metadata: 'dc.identifier.uri', label: 'URI'},
-        {metadata: 'dc.identifier.isbn', label: 'ISBN'},
-        {metadata: 'dc.identifier.doi', label: 'DOI'},
-        {metadata: 'dc.identifier.pmid', label: 'PubMed ID'},
-        {metadata: 'dc.identifier.arxiv', label: 'arXiv'}
+        { metadata: 'dc.identifier.issn', label: 'ISSN' },
+        { metadata: 'dc.identifier.other', label: 'Other' },
+        { metadata: 'dc.identifier.ismn', label: 'ISMN' },
+        { metadata: 'dc.identifier.govdoc', label: 'Gov\'t Doc #' },
+        { metadata: 'dc.identifier.uri', label: 'URI' },
+        { metadata: 'dc.identifier.isbn', label: 'ISBN' },
+        { metadata: 'dc.identifier.doi', label: 'DOI' },
+        { metadata: 'dc.identifier.pmid', label: 'PubMed ID' },
+        { metadata: 'dc.identifier.arxiv', label: 'arXiv' }
       ]
     } as FormFieldModel;
 
     field3 = {
-      input: {type: 'onebox'},
+      input: { type: 'onebox' },
       label: 'Title',
       mandatory: 'false',
       repeatable: false,
@@ -92,12 +92,12 @@ describe('OneboxFieldParser test suite', () => {
     expect(fieldModel instanceof DsDynamicInputModel).toBe(true);
   });
 
-  it('should return a DynamicTypeaheadModel object when selectableMetadata has authority', () => {
+  it('should return a DynamicOneboxModel object when selectableMetadata has authority', () => {
     const parser = new OneboxFieldParser(submissionId, field1, initFormValues, parserOptions);
 
     const fieldModel = parser.parse();
 
-    expect(fieldModel instanceof DynamicTypeaheadModel).toBe(true);
+    expect(fieldModel instanceof DynamicOneboxModel).toBe(true);
   });
 
 });

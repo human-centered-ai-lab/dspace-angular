@@ -73,7 +73,7 @@ export class AuthInterceptor implements HttpInterceptor {
    * @param http
    */
   private isLoginResponse(http: HttpRequest<any> | HttpResponseBase): boolean {
-    return http.url && http.url.endsWith('/authn/login')
+    return http.url && http.url.endsWith('/authn/login');
   }
 
   /**
@@ -102,7 +102,7 @@ export class AuthInterceptor implements HttpInterceptor {
   private parseLocation(header: string): string {
     let location = header.trim();
     location = location.replace('location="', '');
-    location = location.replace('"', '');
+    location = location.replace('"', ''); /* lgtm [js/incomplete-sanitization] */
     let re = /%3A%2F%2F/g;
     location = location.replace(re, '://');
     re = /%3A/g;
@@ -251,7 +251,6 @@ export class AuthInterceptor implements HttpInterceptor {
 
     // Pass on the new request instead of the original request.
     return next.handle(newReq).pipe(
-      // tap((response) => console.log('next.handle: ', response)),
       map((response) => {
         // Intercept a Login/Logout response
         if (response instanceof HttpResponse && this.isSuccess(response) && this.isAuthRequest(response)) {
@@ -271,7 +270,7 @@ export class AuthInterceptor implements HttpInterceptor {
               body: Object.assign(response.body, {
                 authMethods: this.parseAuthMethodsFromHeaders(response.headers)
               })
-            })
+            });
           } else {
             // logout successfully
             authRes = response.clone({

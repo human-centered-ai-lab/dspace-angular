@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/DSpace/dspace-angular.svg?branch=master)](https://travis-ci.org/DSpace/dspace-angular) [![Coverage Status](https://coveralls.io/repos/github/DSpace/dspace-angular/badge.svg?branch=master)](https://coveralls.io/github/DSpace/dspace-angular?branch=master) [![Universal Angular](https://img.shields.io/badge/universal-angular2-brightgreen.svg?style=flat)](https://github.com/angular/universal)
+[![Build Status](https://github.com/DSpace/dspace-angular/workflows/Build/badge.svg?branch=main)](https://github.com/DSpace/dspace-angular/actions?query=workflow%3ABuild) [![Coverage Status](https://codecov.io/gh/DSpace/dspace-angular/branch/main/graph/badge.svg)](https://codecov.io/gh/DSpace/dspace-angular) [![Universal Angular](https://img.shields.io/badge/universal-angular2-brightgreen.svg?style=flat)](https://github.com/angular/universal)
 
 dspace-angular
 ==============
@@ -13,7 +13,7 @@ You can find additional information on the DSpace 7 Angular UI on the [wiki](htt
 Quick start
 -----------
 
-**Ensure you're running [Node](https://nodejs.org) `v10.x` or `v12.x`, [npm](https://www.npmjs.com/) >= `v5.x` and [yarn](https://yarnpkg.com) >= `v1.x`**
+**Ensure you're running [Node](https://nodejs.org) `v12.x` or `v14.x`, [npm](https://www.npmjs.com/) >= `v5.x` and [yarn](https://yarnpkg.com) >= `v1.x`**
 
 ```bash
 # clone the repo
@@ -65,7 +65,7 @@ Requirements
 ------------
 
 -	[Node.js](https://nodejs.org) and [yarn](https://yarnpkg.com)
--	Ensure you're running node `v10.x` or `v12.x` and yarn >= `v1.x`
+-	Ensure you're running node `v12.x` or `v14.x` and yarn >= `v1.x`
 
 If you have [`nvm`](https://github.com/creationix/nvm#install-script) or [`nvm-windows`](https://github.com/coreybutler/nvm-windows) installed, which is highly recommended, you can run `nvm install --lts && nvm use` to install and start using the latest Node LTS.
 
@@ -104,11 +104,12 @@ DSPACE_REST_SSL # Whether the angular REST uses SSL [true/false]
 
 The same settings can also be overwritten by setting system environment variables instead, E.g.:
 ```bash 
-export DSPACE_HOST=https://dspace7.4science.cloud/server
+export DSPACE_HOST=api7.dspace.org
 ```
 
 The priority works as follows: **environment variable** overrides **variable in `.env` file** overrides **`environment.(prod, dev or test).ts`** overrides **`environment.common.ts`**
 
+These configuration sources are collected **at build time**, and written to `src/environments/environment.ts`.  At runtime the configuration is fixed, and neither `.env` nor the process' environment will be consulted.
 
 #### Using environment variables in code
 To use environment variables in a UI component, use:
@@ -134,14 +135,14 @@ To build the app for production and start the server run:
 ```bash
 yarn start
 ```
+This will run the application in an instance of the Express server, which is included.
 
 If you only want to build for production, without starting, run:
 
 ```bash
 yarn run build:prod
 ```
-
-This will build the application and put the result in the `dist` folder
+This will build the application and put the result in the `dist` folder.  You can copy this folder to wherever you need it for your application server.  If you will be using the built-in Express server, you'll also need a copy of the `node_modules` folder tucked inside your copy of `dist`.
 
 
 ### Running the application with Docker
@@ -338,7 +339,6 @@ dspace-angular
 ├── tslint.json                                         * TSLint (https://palantir.github.io/tslint/) configuration
 ├── typedoc.json                                        * TYPEDOC configuration
 ├── webpack                                             * Webpack (https://webpack.github.io/) config directory
-│   ├── helpers.js                                      *
 │   ├── webpack.aot.js                                  * Webpack (https://webpack.github.io/) config for AoT build
 │   ├── webpack.client.js                               * Webpack (https://webpack.github.io/) config for client build
 │   ├── webpack.common.js                               *

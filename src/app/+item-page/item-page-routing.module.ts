@@ -1,27 +1,17 @@
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
-
-import { ItemPageComponent } from './simple/item-page.component';
-import { FullItemPageComponent } from './full/full-item-page.component';
 import { ItemPageResolver } from './item-page.resolver';
-import { URLCombiner } from '../core/url-combiner/url-combiner';
-import { getItemModulePath } from '../app-routing.module';
 import { AuthenticatedGuard } from '../core/auth/authenticated.guard';
 import { ItemBreadcrumbResolver } from '../core/breadcrumbs/item-breadcrumb.resolver';
 import { DSOBreadcrumbsService } from '../core/breadcrumbs/dso-breadcrumbs.service';
 import { LinkService } from '../core/cache/builders/link.service';
 import { UploadBitstreamComponent } from './bitstreams/upload/upload-bitstream.component';
-
-export function getItemPageRoute(itemId: string) {
-  return new URLCombiner(getItemModulePath(), itemId).toString();
-}
-
-export function getItemEditPath(id: string) {
-  return new URLCombiner(getItemModulePath(), id, ITEM_EDIT_PATH).toString()
-}
-
-const ITEM_EDIT_PATH = 'edit';
-const UPLOAD_BITSTREAM_PATH = 'bitstreams/new';
+import { ITEM_EDIT_PATH, UPLOAD_BITSTREAM_PATH } from './item-page-routing-paths';
+import { ItemPageAdministratorGuard } from './item-page-administrator.guard';
+import { MenuItemType } from '../shared/menu/initial-menus-state';
+import { LinkMenuItemModel } from '../shared/menu/menu-item/models/link.model';
+import { ThemedItemPageComponent } from './simple/themed-item-page.component';
+import { ThemedFullItemPageComponent } from './full/themed-full-item-page.component';
 
 @NgModule({
   imports: [
@@ -29,24 +19,24 @@ const UPLOAD_BITSTREAM_PATH = 'bitstreams/new';
       {
         path: ':id',
         resolve: {
-          item: ItemPageResolver,
+          dso: ItemPageResolver,
           breadcrumb: ItemBreadcrumbResolver
         },
         runGuardsAndResolvers: 'always',
         children: [
           {
             path: '',
-            component: ItemPageComponent,
+            component: ThemedItemPageComponent,
             pathMatch: 'full',
           },
           {
             path: 'full',
-            component: FullItemPageComponent,
+            component: ThemedFullItemPageComponent,
           },
           {
             path: ITEM_EDIT_PATH,
-            loadChildren: './edit-item-page/edit-item-page.module#EditItemPageModule',
-            canActivate: [AuthenticatedGuard]
+            loadChildren: () => import('./edit-item-page/edit-item-page.module')
+              .then((m) => m.EditItemPageModule),
           },
           {
             path: UPLOAD_BITSTREAM_PATH,
@@ -54,6 +44,20 @@ const UPLOAD_BITSTREAM_PATH = 'bitstreams/new';
             canActivate: [AuthenticatedGuard]
           }
         ],
+        data: {
+          menu: {
+            public: [{
+              id: 'statistics_item_:id',
+              active: true,
+              visible: true,
+              model: {
+                type: MenuItemType.LINK,
+                text: 'menu.section.statistics',
+                link: 'statistics/items/:id/',
+              } as LinkMenuItemModel,
+            }],
+          },
+        },
       }
     ])
   ],
@@ -61,7 +65,8 @@ const UPLOAD_BITSTREAM_PATH = 'bitstreams/new';
     ItemPageResolver,
     ItemBreadcrumbResolver,
     DSOBreadcrumbsService,
-    LinkService
+    LinkService,
+    ItemPageAdministratorGuard,
   ]
 
 })

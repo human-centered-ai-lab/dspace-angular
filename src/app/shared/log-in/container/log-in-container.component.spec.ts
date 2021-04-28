@@ -1,5 +1,5 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { async, ComponentFixture, inject, TestBed } from '@angular/core/testing';
+import { ComponentFixture, inject, TestBed, waitForAsync } from '@angular/core/testing';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { StoreModule } from '@ngrx/store';
@@ -12,6 +12,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { AuthMethod } from '../../../core/auth/models/auth.method';
 import { AuthServiceStub } from '../../testing/auth-service.stub';
 import { createTestComponent } from '../../testing/utils.test';
+import { HardRedirectService } from '../../../core/services/hard-redirect.service';
 
 describe('LogInContainerComponent', () => {
 
@@ -20,7 +21,13 @@ describe('LogInContainerComponent', () => {
 
   const authMethod = new AuthMethod('password');
 
-  beforeEach(async(() => {
+  let hardRedirectService: HardRedirectService;
+
+  beforeEach(waitForAsync(() => {
+    hardRedirectService = jasmine.createSpyObj('hardRedirectService', {
+      redirect: {},
+      getCurrentRoute: {}
+    });
     // refine the test module by declaring the test component
     TestBed.configureTestingModule({
       imports: [
@@ -34,7 +41,8 @@ describe('LogInContainerComponent', () => {
         TestComponent
       ],
       providers: [
-        {provide: AuthService, useClass: AuthServiceStub},
+        { provide: AuthService, useClass: AuthServiceStub },
+        { provide: HardRedirectService, useValue: hardRedirectService },
         LogInContainerComponent
       ],
       schemas: [
@@ -55,6 +63,7 @@ describe('LogInContainerComponent', () => {
 
       testFixture = createTestComponent(html, TestComponent) as ComponentFixture<TestComponent>;
       testComp = testFixture.componentInstance;
+
     });
 
     afterEach(() => {
@@ -104,5 +113,6 @@ describe('LogInContainerComponent', () => {
 class TestComponent {
 
   isStandalonePage = true;
+  authMethod = new AuthMethod('password');
 
 }

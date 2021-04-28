@@ -1,24 +1,18 @@
-import { Component, ComponentFactoryResolver, ElementRef, OnInit, ViewChild, ViewContainerRef } from '@angular/core';
+import { Component, ComponentFactoryResolver, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Item } from '../../../../../core/shared/item.model';
 import { ViewMode } from '../../../../../core/shared/view-mode.model';
-import { getListableObjectComponent, listableObjectComponent } from '../../../../../shared/object-collection/shared/listable-object/listable-object.decorator';
+import {
+  getListableObjectComponent,
+  listableObjectComponent
+} from '../../../../../shared/object-collection/shared/listable-object/listable-object.decorator';
 import { Context } from '../../../../../core/shared/context.model';
 import { ItemSearchResult } from '../../../../../shared/object-collection/shared/item-search-result.model';
-import { getItemEditPath } from '../../../../../+item-page/item-page-routing.module';
-import { URLCombiner } from '../../../../../core/url-combiner/url-combiner';
-import {
-  ITEM_EDIT_DELETE_PATH,
-  ITEM_EDIT_MOVE_PATH,
-  ITEM_EDIT_PRIVATE_PATH,
-  ITEM_EDIT_PUBLIC_PATH,
-  ITEM_EDIT_REINSTATE_PATH,
-  ITEM_EDIT_WITHDRAW_PATH
-} from '../../../../../+item-page/edit-item-page/edit-item-page.routing.module';
 import { SearchResultGridElementComponent } from '../../../../../shared/object-grid/search-result-grid-element/search-result-grid-element.component';
 import { TruncatableService } from '../../../../../shared/truncatable/truncatable.service';
 import { BitstreamDataService } from '../../../../../core/data/bitstream-data.service';
 import { GenericConstructor } from '../../../../../core/shared/generic-constructor';
 import { ListableObjectDirective } from '../../../../../shared/object-collection/shared/listable-object/listable-object.directive';
+import { ThemeService } from '../../../../../shared/theme-support/theme.service';
 
 @listableObjectComponent(ItemSearchResult, ViewMode.GridElement, Context.AdminSearch)
 @Component({
@@ -36,6 +30,7 @@ export class ItemAdminSearchResultGridElementComponent extends SearchResultGridE
 
   constructor(protected truncatableService: TruncatableService,
               protected bitstreamDataService: BitstreamDataService,
+              private themeService: ThemeService,
               private componentFactoryResolver: ComponentFactoryResolver
   ) {
     super(truncatableService, bitstreamDataService);
@@ -66,10 +61,10 @@ export class ItemAdminSearchResultGridElementComponent extends SearchResultGridE
   }
 
   /**
-   * Fetch the component depending on the item's relationship type, view mode and context
+   * Fetch the component depending on the item's entity type, view mode and context
    * @returns {GenericConstructor<Component>}
    */
   private getComponent(): GenericConstructor<Component> {
-    return getListableObjectComponent(this.object.getRenderTypes(), ViewMode.GridElement, undefined)
+    return getListableObjectComponent(this.object.getRenderTypes(), ViewMode.GridElement, undefined, this.themeService.getThemeName());
   }
 }

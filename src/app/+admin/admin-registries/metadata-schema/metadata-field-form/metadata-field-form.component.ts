@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import {
   DynamicFormControlModel,
+  DynamicFormGroupModel,
   DynamicFormLayout,
   DynamicInputModel
 } from '@ng-dynamic-forms/core';
@@ -9,7 +10,7 @@ import { RegistryService } from '../../../../core/registry/registry.service';
 import { FormBuilderService } from '../../../../shared/form/builder/form-builder.service';
 import { take } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
-import { combineLatest } from 'rxjs/internal/observable/combineLatest';
+import { combineLatest } from 'rxjs';
 import { MetadataSchema } from '../../../../core/metadata/metadata-schema.model';
 import { MetadataField } from '../../../../core/metadata/metadata-field.model';
 
@@ -124,16 +125,20 @@ export class MetadataFieldFormComponent implements OnInit, OnDestroy {
         required: false,
       });
       this.formModel = [
-        this.element,
-        this.qualifier,
-        this.scopeNote
+        new DynamicFormGroupModel(
+        {
+          id: 'metadatadatafieldgroup',
+          group:[this.element, this.qualifier, this.scopeNote]
+        })
       ];
       this.formGroup = this.formBuilderService.createFormGroup(this.formModel);
       this.registryService.getActiveMetadataField().subscribe((field) => {
         this.formGroup.patchValue({
-          element: field != null ? field.element : '',
-          qualifier: field != null ? field.qualifier : '',
-          scopeNote: field != null ? field.scopeNote : ''
+          metadatadatafieldgroup: {
+            element: field != null ? field.element : '',
+            qualifier: field != null ? field.qualifier : '',
+            scopeNote: field != null ? field.scopeNote : ''
+          }
         });
       });
     });
@@ -156,19 +161,17 @@ export class MetadataFieldFormComponent implements OnInit, OnDestroy {
     this.registryService.getActiveMetadataField().pipe(take(1)).subscribe(
       (field) => {
         const values = {
-          schema: this.metadataSchema,
           element: this.element.value,
           qualifier: this.qualifier.value,
           scopeNote: this.scopeNote.value
         };
         if (field == null) {
-          this.registryService.createOrUpdateMetadataField(Object.assign(new MetadataField(), values)).subscribe((newField) => {
+          this.registryService.createMetadataField(Object.assign(new MetadataField(), values), this.metadataSchema).subscribe((newField) => {
             this.submitForm.emit(newField);
           });
         } else {
-          this.registryService.createOrUpdateMetadataField(Object.assign(new MetadataField(), {
+          this.registryService.updateMetadataField(Object.assign(new MetadataField(), field, {
             id: field.id,
-            schema: this.metadataSchema,
             element: (values.element ? values.element : field.element),
             qualifier: (values.qualifier ? values.qualifier : field.qualifier),
             scopeNote: (values.scopeNote ? values.scopeNote : field.scopeNote)
@@ -177,6 +180,7 @@ export class MetadataFieldFormComponent implements OnInit, OnDestroy {
           });
         }
         this.clearFields();
+        this.registryService.cancelEditMetadataField();
       }
     );
   }
@@ -186,9 +190,11 @@ export class MetadataFieldFormComponent implements OnInit, OnDestroy {
    */
   clearFields() {
     this.formGroup.patchValue({
-      element: '',
-      qualifier: '',
-      scopeNote: ''
+      metadatadatafieldgroup: {
+        element: '',
+        qualifier: '',
+        scopeNote: ''
+      }
     });
   }
 

@@ -18,9 +18,9 @@ describe(`DSONameService`, () => {
     mockPersonName = 'Doe, John';
     mockPerson = Object.assign(new DSpaceObject(), {
       firstMetadataValue(keyOrKeys: string | string[], valueFilter?: MetadataValueFilter): string {
-        return mockPersonName
+        return mockPersonName;
       },
-      getRenderTypes(): Array<string | GenericConstructor<ListableObject>> {
+      getRenderTypes(): (string | GenericConstructor<ListableObject>)[] {
         return ['Person', Item, DSpaceObject];
       }
     });
@@ -28,9 +28,9 @@ describe(`DSONameService`, () => {
     mockOrgUnitName = 'Molecular Spectroscopy';
     mockOrgUnit = Object.assign(new DSpaceObject(), {
       firstMetadataValue(keyOrKeys: string | string[], valueFilter?: MetadataValueFilter): string {
-        return mockOrgUnitName
+        return mockOrgUnitName;
       },
-      getRenderTypes(): Array<string | GenericConstructor<ListableObject>> {
+      getRenderTypes(): (string | GenericConstructor<ListableObject>)[] {
         return ['OrgUnit', Item, DSpaceObject];
       }
     });
@@ -38,14 +38,14 @@ describe(`DSONameService`, () => {
     mockDSOName = 'Lorem Ipsum';
     mockDSO = Object.assign(new DSpaceObject(), {
       firstMetadataValue(keyOrKeys: string | string[], valueFilter?: MetadataValueFilter): string {
-        return mockDSOName
+        return mockDSOName;
       },
-      getRenderTypes(): Array<string | GenericConstructor<ListableObject>> {
+      getRenderTypes(): (string | GenericConstructor<ListableObject>)[] {
         return [DSpaceObject];
       }
     });
 
-    service = new DSONameService();
+    service = new DSONameService({ instant: (a) => a } as any);
   });
 
   describe(`getName`, () => {

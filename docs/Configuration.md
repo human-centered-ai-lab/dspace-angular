@@ -39,10 +39,10 @@ export const environment = {
   // The REST API server settings.
   rest: {
     ssl: true,
-    host: 'dspace7.4science.cloud',
+    host: 'api7.dspace.org',
     port: 443,
     // NOTE: Space is capitalized because 'namespace' is a reserved string in TypeScript
-    nameSpace: '/server/api'
+    nameSpace: '/server'
   }
 };
 ```
@@ -50,9 +50,9 @@ export const environment = {
 Alternately you can set the following environment variables. If any of these are set, it will override all configuration files:
 ```
   DSPACE_REST_SSL=true
-  DSPACE_REST_HOST=dspace7.4science.cloud
+  DSPACE_REST_HOST=api7.dspace.org
   DSPACE_REST_PORT=443
-  DSPACE_REST_NAMESPACE=/server/api
+  DSPACE_REST_NAMESPACE=/server
 ```
 
 ## Supporting analytics services other than Google Analytics
@@ -63,3 +63,4 @@ Angulartics can be configured to work with a number of other services besides Go
 In order to start using one of these services, select it from the [Angulartics Providers page](https://angulartics.github.io/angulartics2/#providers), and follow the instructions on how to configure it.
 
 The Google Analytics script was added in [`main.browser.ts`](https://github.com/DSpace/dspace-angular/blob/ff04760f4af91ac3e7add5e7424a46cb2439e874/src/main.browser.ts#L33) instead of the `<head>` tag in `index.html` to ensure events get sent when the page is shown in a client's browser, and not when it's rendered on the universal server. Likely you'll want to do the same when adding a new service.
+

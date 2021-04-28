@@ -4,8 +4,14 @@ import { SharedModule } from '../shared/shared.module';
 import { CommunityListPageComponent } from './community-list-page.component';
 import { CommunityListPageRoutingModule } from './community-list-page.routing.module';
 import { CommunityListComponent } from './community-list/community-list.component';
-import { CdkTreeModule } from '@angular/cdk/tree';
+import { ThemedCommunityListPageComponent } from './themed-community-list-page.component';
 
+
+const DECLARATIONS = [
+  CommunityListPageComponent,
+  CommunityListComponent,
+  ThemedCommunityListPageComponent
+];
 /**
  * The page which houses a title and the community list, as described in community-list.component
  */
@@ -13,13 +19,14 @@ import { CdkTreeModule } from '@angular/cdk/tree';
   imports: [
     CommonModule,
     SharedModule,
-    CommunityListPageRoutingModule,
-    CdkTreeModule,
+    CommunityListPageRoutingModule
   ],
   declarations: [
-    CommunityListPageComponent,
-    CommunityListComponent
-  ]
+    ...DECLARATIONS
+  ],
+  exports: [
+    ...DECLARATIONS,
+  ],
 })
 export class CommunityListPageModule {
 

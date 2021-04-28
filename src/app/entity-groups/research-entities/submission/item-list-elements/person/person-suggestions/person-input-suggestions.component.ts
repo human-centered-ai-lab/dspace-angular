@@ -28,13 +28,15 @@ export class PersonInputSuggestionsComponent extends InputSuggestionsComponent i
 
   ngOnInit() {
     if (this.suggestions.length > 0) {
-      this.value = this.suggestions[0]
+      this.value = this.suggestions[0];
     }
   }
 
   onSubmit(data) {
-    this.value = data;
-    this.submitSuggestion.emit(data);
+    if (data !== this.value) {
+      this.value = data;
+      this.submitSuggestion.emit(data);
+    }
   }
 
   onClickSuggestion(data) {

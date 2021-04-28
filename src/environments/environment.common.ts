@@ -2,24 +2,32 @@ import { GlobalConfig } from '../config/global-config.interface';
 import { NotificationAnimationsType } from '../app/shared/notifications/models/notification-animations-type';
 import { BrowseByType } from '../app/+browse-by/+browse-by-switcher/browse-by-decorator';
 import { RestRequestMethod } from '../app/core/data/rest-request-method';
+import { BASE_THEME_NAME } from '../app/shared/theme-support/theme.constants';
 
 export const environment: GlobalConfig = {
   production: true,
   // Angular Universal server settings.
+  // NOTE: these must be "synced" with the 'dspace.ui.url' setting in your backend's local.cfg.
   ui: {
     ssl: false,
     host: 'localhost',
     port: 4000,
     // NOTE: Space is capitalized because 'namespace' is a reserved string in TypeScript
     nameSpace: '/',
+    // The rateLimiter settings limit each IP to a "max" of 500 requests per "windowMs" (1 minute).
+    rateLimiter: {
+      windowMs: 1 * 60 * 1000,   // 1 minute
+      max: 500 // limit each IP to 500 requests per windowMs
+    }
   },
   // The REST API server settings.
+  // NOTE: these must be "synced" with the 'dspace.server.url' setting in your backend's local.cfg.
   rest: {
     ssl: false,
     host: 'localhost',
     port: 8080,
     // NOTE: Space is capitalized because 'namespace' is a reserved string in TypeScript
-    nameSpace: '/server/api',
+    nameSpace: '/server',
   },
   // Caching settings
   cache: {
@@ -58,9 +66,12 @@ export const environment: GlobalConfig = {
   submission: {
     autosave: {
       // NOTE: which metadata trigger an autosave
-      metadata: ['dc.title', 'dc.identifier.doi', 'dc.identifier.pmid', 'dc.identifier.arxiv'],
-      // NOTE: every how many minutes submission is saved automatically
-      timer: 5
+      metadata: [],
+      /**
+       * NOTE: after how many time (milliseconds) submission is saved automatically
+       * eg. timer: 5 * (1000 * 60); // 5 minutes
+       */
+      timer: 0
     },
     icons: {
       metadata: [
@@ -122,8 +133,6 @@ export const environment: GlobalConfig = {
     async: true,
     time: false
   },
-  // Google Analytics tracking id
-  gaTrackingId: '',
   // Log directory
   logDirectory: '.',
   // NOTE: will log all redux actions and transfers in console
@@ -148,8 +157,12 @@ export const environment: GlobalConfig = {
     code: 'nl',
     label: 'Nederlands',
     active: true,
-  }, {
-    code: 'pt',
+  },{
+    code: 'pt-BR',
+    label: 'Português do Brasil',
+    active: true,
+  },{
+    code: 'pt-PT',
     label: 'Português',
     active: true,
   }, {
@@ -163,6 +176,10 @@ export const environment: GlobalConfig = {
   },{
     code: 'fi',
     label: 'Suomi',
+    active: true,
+  },{
+    code: 'hu',
+    label: 'magyar',
     active: true,
   }],
   // Browse-By Pages
@@ -210,7 +227,51 @@ export const environment: GlobalConfig = {
       undoTimeout: 10000 // 10 seconds
     }
   },
-  theme: {
-    name: 'default',
-  }
+  themes: [
+    // Add additional themes here. In the case where multiple themes match a route, the first one
+    // in this list will get priority. It is advisable to always have a theme that matches
+    // every route as the last one
+
+    // {
+    //   // A theme with a handle property will match the community, collection or item with the given
+    //   // handle, and all collections and/or items within it
+    //   name: 'custom',
+    //   handle: '10673/1233'
+    // },
+    // {
+    //   // A theme with a regex property will match the route using a regular expression. If it
+    //   // matches the route for a community or collection it will also apply to all collections
+    //   // and/or items within it
+    //   name: 'custom',
+    //   regex: 'collections\/e8043bc2.*'
+    // },
+    // {
+    //   // A theme with a uuid property will match the community, collection or item with the given
+    //   // ID, and all collections and/or items within it
+    //   name: 'custom',
+    //   uuid: '0958c910-2037-42a9-81c7-dca80e3892b4'
+    // },
+    // {
+    //   // A theme with only a name will match every route
+    //   name: 'custom'
+    // },
+    // {
+    //   // This theme will use the default bootstrap styling for DSpace components
+    //   name: BASE_THEME_NAME
+    // },
+
+    {
+      // The default dspace theme
+      name: 'dspace'
+    },
+  ],
+  // Whether the UI should rewrite file download URLs to match its domain. Only necessary to enable when running UI and REST API on separate domains
+  rewriteDownloadUrls: false,
+  // Whether to enable media viewer for image and/or video Bitstreams (i.e. Bitstreams whose MIME type starts with "image" or "video").  
+  // For images, this enables a gallery viewer where you can zoom or page through images. 
+  // For videos, this enables embedded video streaming
+  mediaViewer: {
+    image: false,
+    video: false,
+  },
 };

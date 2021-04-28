@@ -1,19 +1,22 @@
 import { Inject, InjectionToken } from '@angular/core';
-import { hasValue, isNotEmpty, isNotNull, isNotUndefined, isEmpty } from '../../../empty.util';
-import { FormFieldModel } from '../models/form-field.model';
 
 import { uniqueId } from 'lodash';
+import { DynamicFormControlLayout } from '@ng-dynamic-forms/core';
+
+import { hasValue, isNotEmpty, isNotNull, isNotUndefined } from '../../../empty.util';
+import { FormFieldModel } from '../models/form-field.model';
 import { FormFieldMetadataValueObject } from '../models/form-field-metadata-value.model';
 import {
   DynamicRowArrayModel,
   DynamicRowArrayModelConfig
 } from '../ds-dynamic-form-ui/models/ds-dynamic-row-array-model';
 import { DsDynamicInputModel, DsDynamicInputModelConfig } from '../ds-dynamic-form-ui/models/ds-dynamic-input.model';
-import { DynamicFormControlLayout } from '@ng-dynamic-forms/core';
 import { setLayout } from './parser.utils';
-import { AuthorityOptions } from '../../../../core/integration/models/authority-options.model';
 import { ParserOptions } from './parser-options';
 import { RelationshipOptions } from '../models/relationship-options.model';
+import { VocabularyOptions } from '../../../../core/submission/vocabularies/models/vocabulary-options.model';
+import { ParserType } from './parser-type';
+import { isNgbDateStruct } from '../../../date.util';
 
 export const SUBMISSION_ID: InjectionToken<string> = new InjectionToken<string>('submissionId');
 export const CONFIG_DATA: InjectionToken<FormFieldModel> = new InjectionToken<FormFieldModel>('configData');
@@ -36,31 +39,45 @@ export abstract class FieldParser {
 
   public parse() {
     if (((this.getInitValueCount() > 1 && !this.configData.repeatable) || (this.configData.repeatable))
-      && (this.configData.input.type !== 'list')
-      && (this.configData.input.type !== 'tag')
-      && (this.configData.input.type !== 'group')
-      && isEmpty(this.configData.selectableRelationship)
+      && (this.configData.input.type !== ParserType.List)
+      && (this.configData.input.type !== ParserType.Tag)
     ) {
       let arrayCounter = 0;
       let fieldArrayCounter = 0;
 
+      let metadataKey;
+
+      if (Array.isArray(this.configData.selectableMetadata) && this.configData.selectableMetadata.length === 1) {
+        metadataKey = this.configData.selectableMetadata[0].metadata;
+      }
+
+      let isDraggable = true;
+      if (this.configData.input.type === ParserType.Onebox && this.configData?.selectableMetadata?.length > 1) {
+        isDraggable = false;
+      }
       const config = {
         id: uniqueId() + '_array',
         label: this.configData.label,
         initialCount: this.getInitArrayIndex(),
         notRepeatable: !this.configData.repeatable,
-        required: JSON.parse( this.configData.mandatory),
+        relationshipConfig: this.configData.selectableRelationship,
+        required: JSON.parse(this.configData.mandatory),
+        submissionId: this.submissionId,
+        metadataKey,
+        metadataFields: this.getAllFieldIds(),
+        hasSelectableMetadata: isNotEmpty(this.configData.selectableMetadata),
+        isDraggable,
         groupFactory: () => {
           let model;
           if ((arrayCounter === 0)) {
             model = this.modelFactory();
             arrayCounter++;
           } else {
-            const fieldArrayOfValueLenght = this.getInitValueCount(arrayCounter - 1);
+            const fieldArrayOfValueLength = this.getInitValueCount(arrayCounter - 1);
             let fieldValue = null;
-            if (fieldArrayOfValueLenght > 0) {
+            if (fieldArrayOfValueLength > 0) {
               fieldValue = this.getInitFieldValue(arrayCounter - 1, fieldArrayCounter++);
-              if (fieldArrayCounter === fieldArrayOfValueLenght) {
+              if (fieldArrayCounter === fieldArrayOfValueLength) {
                 fieldArrayCounter = 0;
                 arrayCounter++;
               }
@@ -68,7 +85,7 @@ export abstract class FieldParser {
             model = this.modelFactory(fieldValue, false);
           }
           setLayout(model, 'element', 'host', 'col');
-          if (model.hasLanguages) {
+          if (model.hasLanguages || isNotEmpty(model.relationship)) {
             setLayout(model, 'grid', 'control', 'col');
           }
           return [model];
@@ -85,11 +102,60 @@ export abstract class FieldParser {
 
     } else {
       const model = this.modelFactory(this.getInitFieldValue());
+      model.submissionId = this.submissionId;
       if (model.hasLanguages || isNotEmpty(model.relationship)) {
         setLayout(model, 'grid', 'control', 'col');
       }
       return model;
     }
+  }
+
+  public setVocabularyOptions(controlModel) {
+    if (isNotEmpty(this.configData.selectableMetadata) && isNotEmpty(this.configData.selectableMetadata[0].controlledVocabulary)) {
+      controlModel.vocabularyOptions = new VocabularyOptions(
+        this.configData.selectableMetadata[0].controlledVocabulary,
+        this.configData.selectableMetadata[0].closed
+      );
+    }
+  }
+
+  public setValues(modelConfig: DsDynamicInputModelConfig, fieldValue: any, forceValueAsObj: boolean = false, groupModel?: boolean) {
+    if (isNotEmpty(fieldValue)) {
+      if (groupModel) {
+        // Array, values is an array
+        modelConfig.value = this.getInitGroupValues();
+        if (Array.isArray(modelConfig.value) && modelConfig.value.length > 0 && modelConfig.value[0].language) {
+          // Array Item has language, ex. AuthorityModel
+          modelConfig.language = modelConfig.value[0].language;
+        }
+        return;
+      }
+
+      if (isNgbDateStruct(fieldValue)) {
+        modelConfig.value = fieldValue;
+      } else if (typeof fieldValue === 'object') {
+        modelConfig.metadataValue = fieldValue;
+        modelConfig.language = fieldValue.language;
+        modelConfig.place = fieldValue.place;
+        if (forceValueAsObj) {
+          modelConfig.value = fieldValue;
+        } else {
+          modelConfig.value = fieldValue.value;
+        }
+      } else {
+        if (forceValueAsObj) {
+          // If value isn't an instance of FormFieldMetadataValueObject instantiate it
+          modelConfig.value = new FormFieldMetadataValueObject(fieldValue);
+        } else {
+          if (typeof fieldValue === 'string') {
+            // Case only string
+            modelConfig.value = fieldValue;
+          }
+        }
+      }
+    }
+
+    return modelConfig;
   }
 
   protected getInitValueCount(index = 0, fieldId?): number {
@@ -135,8 +201,8 @@ export abstract class FieldParser {
       fieldIds.forEach((id) => {
         if (this.initFormValues.hasOwnProperty(id)) {
           const valueObj: FormFieldMetadataValueObject = Object.assign(new FormFieldMetadataValueObject(), this.initFormValues[id][innerIndex]);
+          // Set metadata name, used for Qualdrop fields
           valueObj.metadata = id;
-          // valueObj.value = this.initFormValues[id][innerIndex];
           values.push(valueObj);
         }
       });
@@ -178,11 +244,11 @@ export abstract class FieldParser {
         return ids;
       }
     } else {
-      return [this.configData.selectableRelationship.relationshipType];
+      return ['relation.' + this.configData.selectableRelationship.relationshipType];
     }
   }
 
-  protected initModel(id?: string, label = true, setErrors = true) {
+  protected initModel(id?: string, label = true, labelEmpty = false, setErrors = true, hint = true) {
 
     const controlModel = Object.create(null);
 
@@ -202,15 +268,16 @@ export abstract class FieldParser {
       controlModel.relationship = Object.assign(new RelationshipOptions(), this.configData.selectableRelationship);
     }
     controlModel.repeatable = this.configData.repeatable;
-    controlModel.metadataFields = isNotEmpty(this.configData.selectableMetadata) ? this.configData.selectableMetadata.map((metadataObject) => metadataObject.metadata) : [];
+    controlModel.metadataFields = this.getAllFieldIds() || [];
+    controlModel.hasSelectableMetadata = isNotEmpty(this.configData.selectableMetadata);
     controlModel.submissionId = this.submissionId;
 
     // Set label
     this.setLabel(controlModel, label);
-
+    if (hint) {
+      controlModel.hint = this.configData.hints;
+    }
     controlModel.placeholder = this.configData.label;
-
-    controlModel.hint = this.configData.hints;
 
     if (this.configData.mandatory && setErrors) {
       this.markAsRequired(controlModel);
@@ -224,14 +291,6 @@ export abstract class FieldParser {
     if (this.configData.languageCodes && this.configData.languageCodes.length > 0) {
       (controlModel as DsDynamicInputModel).languageCodes = this.configData.languageCodes;
     }
-    /*    (controlModel as DsDynamicInputModel).languageCodes = [{
-            display: 'English',
-            code: 'en_US'
-          },
-          {
-            display: 'Italian',
-            code: 'it_IT'
-          }];*/
 
     return controlModel;
   }
@@ -247,7 +306,6 @@ export abstract class FieldParser {
       {},
       controlModel.errorMessages,
       { pattern: 'error.validation.pattern' });
-
   }
 
   protected markAsRequired(controlModel) {
@@ -261,7 +319,7 @@ export abstract class FieldParser {
 
   protected setLabel(controlModel, label = true, labelEmpty = false) {
     if (label) {
-      controlModel.label = this.configData.label;
+      controlModel.label = (labelEmpty) ? '&nbsp;' : this.configData.label;
     }
   }
 
@@ -276,52 +334,6 @@ export abstract class FieldParser {
         controlModel.options.push({ label: option.label, value: option.metadata });
       });
     }
-  }
-
-  public setAuthorityOptions(controlModel, authorityUuid) {
-    if (isNotEmpty(this.configData.selectableMetadata) && isNotEmpty(this.configData.selectableMetadata[0].authority)) {
-      controlModel.authorityOptions = new AuthorityOptions(
-        this.configData.selectableMetadata[0].authority,
-        this.configData.selectableMetadata[0].metadata,
-        authorityUuid,
-        this.configData.selectableMetadata[0].closed
-      )
-    }
-  }
-
-  public setValues(modelConfig: DsDynamicInputModelConfig, fieldValue: any, forceValueAsObj: boolean = false, groupModel?: boolean) {
-    if (isNotEmpty(fieldValue)) {
-      if (groupModel) {
-        // Array, values is an array
-        modelConfig.value = this.getInitGroupValues();
-        if (Array.isArray(modelConfig.value) && modelConfig.value.length > 0 && modelConfig.value[0].language) {
-          // Array Item has language, ex. AuthorityModel
-          modelConfig.language = modelConfig.value[0].language;
-        }
-        return;
-      }
-
-      if (typeof fieldValue === 'object') {
-        modelConfig.language = fieldValue.language;
-        if (forceValueAsObj) {
-          modelConfig.value = fieldValue;
-        } else {
-          modelConfig.value = fieldValue.value;
-        }
-      } else {
-        if (forceValueAsObj) {
-          // If value isn't an instance of FormFieldMetadataValueObject instantiate it
-          modelConfig.value = new FormFieldMetadataValueObject(fieldValue);
-        } else {
-          if (typeof fieldValue === 'string') {
-            // Case only string
-            modelConfig.value = fieldValue;
-          }
-        }
-      }
-    }
-
-    return modelConfig;
   }
 
 }

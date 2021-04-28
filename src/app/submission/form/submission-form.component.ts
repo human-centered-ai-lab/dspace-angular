@@ -14,6 +14,9 @@ import { UploaderOptions } from '../../shared/uploader/uploader-options.model';
 import { SubmissionObjectEntry } from '../objects/submission-objects.reducer';
 import { SectionDataObject } from '../sections/models/section-data.model';
 import { SubmissionService } from '../submission.service';
+import { Item } from '../../core/shared/item.model';
+import { SectionsType } from '../sections/sections-type';
+import { SectionsService } from '../sections/sections.service';
 
 /**
  * This component represents the submission form.
@@ -30,6 +33,7 @@ export class SubmissionFormComponent implements OnChanges, OnDestroy {
    * @type {string}
    */
   @Input() collectionId: string;
+  @Input() item: Item;
 
   /**
    * The list of submission's sections
@@ -68,6 +72,11 @@ export class SubmissionFormComponent implements OnChanges, OnDestroy {
   public loading: Observable<boolean> = observableOf(true);
 
   /**
+   * Emits true when the submission config has bitstream uploading enabled in submission
+   */
+  public uploadEnabled$: Observable<boolean>;
+
+  /**
    * Observable of the list of submission's sections
    * @type {Observable<WorkspaceitemSectionsObject>}
    */
@@ -98,12 +107,14 @@ export class SubmissionFormComponent implements OnChanges, OnDestroy {
    * @param {ChangeDetectorRef} changeDetectorRef
    * @param {HALEndpointService} halService
    * @param {SubmissionService} submissionService
+   * @param {SectionsService} sectionsService
    */
   constructor(
     private authService: AuthService,
     private changeDetectorRef: ChangeDetectorRef,
     private halService: HALEndpointService,
-    private submissionService: SubmissionService) {
+    private submissionService: SubmissionService,
+    private sectionsService: SectionsService) {
     this.isActive = true;
   }
 
@@ -124,9 +135,10 @@ export class SubmissionFormComponent implements OnChanges, OnDestroy {
           if (!isLoading) {
             return this.getSectionsList();
           } else {
-            return observableOf([])
+            return observableOf([]);
           }
         }));
+      this.uploadEnabled$ = this.sectionsService.isSectionTypeAvailable(this.submissionId, SectionsType.Upload);
 
       // check if is submission loading
       this.loading = this.submissionService.getSubmissionObject(this.submissionId).pipe(
@@ -150,6 +162,7 @@ export class SubmissionFormComponent implements OnChanges, OnDestroy {
               this.selfUrl,
               this.submissionDefinition,
               this.sections,
+              this.item,
               null);
             this.changeDetectorRef.detectChanges();
           })
@@ -191,7 +204,8 @@ export class SubmissionFormComponent implements OnChanges, OnDestroy {
         this.submissionId,
         submissionObject._links.self.href,
         this.submissionDefinition,
-        this.sections);
+        this.sections,
+        this.item);
     } else {
       this.changeDetectorRef.detectChanges();
     }

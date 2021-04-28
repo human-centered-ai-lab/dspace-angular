@@ -11,7 +11,7 @@ import { DsDynamicTextAreaModelConfig } from '../../form/builder/ds-dynamic-form
 import { PolicyType } from '../../../core/resource-policy/models/policy-type.model';
 import { ActionType } from '../../../core/resource-policy/models/action-type.model';
 
-const policyTypeList: Array<DynamicFormOptionConfig<any>> = [
+const policyTypeList: DynamicFormOptionConfig<any>[] = [
   {
     label: PolicyType.TYPE_SUBMISSION,
     value: PolicyType.TYPE_SUBMISSION
@@ -30,7 +30,7 @@ const policyTypeList: Array<DynamicFormOptionConfig<any>> = [
   },
 ];
 
-const policyActionList: Array<DynamicFormOptionConfig<any>> = [
+const policyActionList: DynamicFormOptionConfig<any>[] = [
   {
     label: ActionType.READ.toString(),
     value: ActionType.READ
@@ -70,7 +70,8 @@ export const RESOURCE_POLICY_FORM_NAME_CONFIG: DsDynamicInputModelConfig = {
   label: 'resource-policies.form.name.label',
   metadataFields: [],
   repeatable: false,
-  submissionId: ''
+  submissionId: '',
+  hasSelectableMetadata: false
 };
 
 export const RESOURCE_POLICY_FORM_DESCRIPTION_CONFIG: DsDynamicTextAreaModelConfig = {
@@ -79,7 +80,8 @@ export const RESOURCE_POLICY_FORM_DESCRIPTION_CONFIG: DsDynamicTextAreaModelConf
   metadataFields: [],
   repeatable: false,
   rows: 10,
-  submissionId: ''
+  submissionId: '',
+  hasSelectableMetadata: false
 };
 
 export const RESOURCE_POLICY_FORM_POLICY_TYPE_CONFIG: DynamicSelectModelConfig<any> = {

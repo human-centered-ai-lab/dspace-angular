@@ -1,4 +1,4 @@
-import { Component, Inject, Injector, OnInit } from '@angular/core';
+import { Component, Injector } from '@angular/core';
 import { slideMobileNav } from '../shared/animations/slide';
 import { MenuComponent } from '../shared/menu/menu.component';
 import { MenuService } from '../shared/menu/menu.service';
@@ -17,7 +17,7 @@ import { environment } from '../../environments/environment';
   templateUrl: './navbar.component.html',
   animations: [slideMobileNav]
 })
-export class NavbarComponent extends MenuComponent implements OnInit {
+export class NavbarComponent extends MenuComponent {
   /**
    * The menu ID of the Navbar is PUBLIC
    * @type {MenuID.PUBLIC}
@@ -41,6 +41,17 @@ export class NavbarComponent extends MenuComponent implements OnInit {
    */
   createMenu() {
     const menuList: any[] = [
+      /* Communities & Collections tree */
+      {
+        id: `browse_global_communities_and_collections`,
+        active: false,
+        visible: true,
+        model: {
+          type: MenuItemType.LINK,
+          text: `menu.section.browse_global_communities_and_collections`,
+          link: `/community-list`
+        } as LinkMenuItemModel
+      },
       /* News */
       {
         id: 'browse_global',
@@ -51,31 +62,6 @@ export class NavbarComponent extends MenuComponent implements OnInit {
           text: 'menu.section.browse_global'
         } as TextMenuItemModel,
         index: 0
-      },
-      /* Communities & Collections tree */
-      {
-        id: `browse_global_communities_and_collections`,
-        parentID: 'browse_global',
-        active: false,
-        visible: true,
-        model: {
-          type: MenuItemType.LINK,
-          text: `menu.section.browse_global_communities_and_collections`,
-          link: `/community-list`
-        } as LinkMenuItemModel
-      },
-
-      /* Statistics */
-      {
-        id: 'statistics',
-        active: false,
-        visible: true,
-        model: {
-          type: MenuItemType.LINK,
-          text: 'menu.section.statistics',
-          link: ''
-        } as LinkMenuItemModel,
-        index: 2
       },
     ];
     // Read the different Browse-By types from config and add them to the browse menu
@@ -93,8 +79,9 @@ export class NavbarComponent extends MenuComponent implements OnInit {
         } as LinkMenuItemModel
       });
     });
-    menuList.forEach((menuSection) => this.menuService.addSection(this.menuID, menuSection));
+    menuList.forEach((menuSection) => this.menuService.addSection(this.menuID, Object.assign(menuSection, {
+      shouldPersistOnRouteChange: true
+    })));
 
   }
-
 }

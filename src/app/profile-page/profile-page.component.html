@@ -10,10 +10,16 @@
     <div class="card mb-4">
       <div class="card-header">{{'profile.card.security' | translate}}</div>
       <div class="card-body">
-        <ds-profile-page-security-form [user]="user"></ds-profile-page-security-form>
+        <ds-profile-page-security-form
+                [FORM_PREFIX]="'profile.security.form.'"
+                (isInvalid)="setInvalid($event)"
+                (passwordValue)="setPasswordValue($event)"
+        ></ds-profile-page-security-form>
       </div>
     </div>
-    <button class="btn btn-outline-primary" (click)="updateProfile()">{{'profile.form.submit' | translate}}</button>
+    <div class="col-12 text-right pr-0">
+      <button class="btn btn-primary" (click)="updateProfile()"><i class="fas fa-edit"></i> {{'profile.form.submit' | translate}}</button>
+    </div>
 
     <ng-container *ngVar="(groupsRD$ | async)?.payload?.page as groups">
       <div *ngIf="groups">

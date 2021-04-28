@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "dspace-angular-cli": {
+    "dspace-angular": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,23 +17,51 @@
         "build": {
           "builder": "@angular-builders/custom-webpack:browser",
           "options": {
+            "extractCss": true,
+            "preserveSymlinks": true,
             "customWebpackConfig": {
-              "path": "./webpack/webpack.common.ts",
+              "path": "./webpack/webpack.browser.ts",
               "mergeStrategies": {
                 "loaders": "prepend"
-              },
+              }
             },
+            "allowedCommonJsDependencies": [
+              "angular2-text-mask",
+              "cerialize",
+              "core-js",
+              "lodash",
+              "jwt-decode",
+              "url-parse",
+              "uuid",
+              "webfontloader",
+              "zone.js"
+            ],
             "outputPath": "dist/browser",
             "index": "src/index.html",
             "main": "src/main.browser.ts",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
-            "aot": false,
+            "aot": true,
             "assets": [
-              "src/assets"
+              "src/assets",
+              "src/robots.txt"
             ],
             "styles": [
-              "src/styles.scss"
+              {
+                "input": "src/styles/base-theme.scss",
+                "inject": false,
+                "bundleName": "base-theme"
+              },
+              {
+                "input": "src/themes/custom/styles/theme.scss",
+                "inject": false,
+                "bundleName": "custom-theme"
+              },
+              {
+                "input": "src/themes/dspace/styles/theme.scss",
+                "inject": false,
+                "bundleName": "dspace-theme"
+              }
             ],
             "scripts": []
           },
@@ -55,8 +83,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kb",
-                  "maximumError": "10kb"
+                  "maximumWarning": "200kb",
+                  "maximumError": "300kb"
                 }
               ]
             }
@@ -65,26 +93,26 @@
         "serve": {
           "builder": "@angular-builders/custom-webpack:dev-server",
           "options": {
-            "browserTarget": "dspace-angular-cli:build",
+            "browserTarget": "dspace-angular:build",
             "port": 4000
           },
           "configurations": {
             "production": {
-              "browserTarget": "dspace-angular-cli:build:production"
+              "browserTarget": "dspace-angular:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "dspace-angular-cli:build"
+            "browserTarget": "dspace-angular:build"
           }
         },
         "test": {
           "builder": "@angular-builders/custom-webpack:karma",
           "options": {
             "customWebpackConfig": {
-              "path": "./webpack/webpack.common.ts",
+              "path": "./webpack/webpack.test.ts",
               "mergeStrategies": {
                 "loaders": "prepend"
               }
@@ -93,11 +121,21 @@
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.spec.json",
             "karmaConfig": "karma.conf.js",
+            "sourceMap": {
+              "scripts": false,
+              "styles": false,
+              "hidden": false,
+              "vendor": false
+            },
             "assets": [
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              {
+                "input": "src/styles/base-theme.scss",
+                "inject": false,
+                "bundleName": "base-theme"
+              }
             ],
             "scripts": []
           }
@@ -119,11 +157,11 @@
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
             "protractorConfig": "e2e/protractor.conf.js",
-            "devServerTarget": "dspace-angular-cli:serve"
+            "devServerTarget": "dspace-angular:serve"
           },
           "configurations": {
             "production": {
-              "devServerTarget": "dspace-angular-cli:serve:production"
+              "devServerTarget": "dspace-angular:serve:production"
             }
           }
         },
@@ -149,9 +187,36 @@
               }
             }
           }
+        },
+        "serve-ssr": {
+          "builder": "@nguniversal/builders:ssr-dev-server",
+          "options": {
+            "browserTarget": "dspace-angular:build",
+            "serverTarget": "dspace-angular:server",
+            "port": 4000
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "dspace-angular:build:production",
+              "serverTarget": "dspace-angular:server:production"
+            }
+          }
+        },
+        "prerender": {
+          "builder": "@nguniversal/builders:prerender",
+          "options": {
+            "browserTarget": "dspace-angular:build:production",
+            "serverTarget": "dspace-angular:server:production",
+            "routes": [
+              "/"
+            ]
+          },
+          "configurations": {
+            "production": {}
+          }
         }
       }
     }
   },
-  "defaultProject": "dspace-angular-cli"
+  "defaultProject": "dspace-angular"
 }

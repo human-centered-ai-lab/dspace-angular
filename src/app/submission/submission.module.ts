@@ -1,5 +1,4 @@
 import { NgModule } from '@angular/core';
-import { TranslateModule } from '@ngx-translate/core';
 import { CoreModule } from '../core/core.module';
 import { SharedModule } from '../shared/shared.module';
 
@@ -28,7 +27,43 @@ import { SubmissionSectionUploadFileViewComponent } from './sections/upload/file
 import { SubmissionSectionUploadAccessConditionsComponent } from './sections/upload/accessConditions/submission-section-upload-access-conditions.component';
 import { SubmissionSubmitComponent } from './submit/submission-submit.component';
 import { storeModuleConfig } from '../app.reducer';
-import { CoreState } from '../core/core.reducers';
+import { SubmissionImportExternalComponent } from './import-external/submission-import-external.component';
+import { SubmissionImportExternalSearchbarComponent } from './import-external/import-external-searchbar/submission-import-external-searchbar.component';
+import { SubmissionImportExternalPreviewComponent } from './import-external/import-external-preview/submission-import-external-preview.component';
+import { SubmissionImportExternalCollectionComponent } from './import-external/import-external-collection/submission-import-external-collection.component';
+import { SubmissionSectionCcLicensesComponent } from './sections/cc-license/submission-section-cc-licenses.component';
+import { JournalEntitiesModule } from '../entity-groups/journal-entities/journal-entities.module';
+import { ResearchEntitiesModule } from '../entity-groups/research-entities/research-entities.module';
+import { ThemedSubmissionEditComponent } from './edit/themed-submission-edit.component';
+import { ThemedSubmissionSubmitComponent } from './submit/themed-submission-submit.component';
+import { ThemedSubmissionImportExternalComponent } from './import-external/themed-submission-import-external.component';
+
+const DECLARATIONS = [
+  SubmissionSectionUploadAccessConditionsComponent,
+  SubmissionSectionUploadComponent,
+  SubmissionSectionformComponent,
+  SubmissionSectionLicenseComponent,
+  SubmissionSectionCcLicensesComponent,
+  SectionsDirective,
+  SubmissionEditComponent,
+  ThemedSubmissionEditComponent,
+  SubmissionFormSectionAddComponent,
+  SubmissionFormCollectionComponent,
+  SubmissionFormComponent,
+  SubmissionFormFooterComponent,
+  SubmissionSubmitComponent,
+  ThemedSubmissionSubmitComponent,
+  SubmissionUploadFilesComponent,
+  SubmissionSectionContainerComponent,
+  SubmissionSectionUploadFileComponent,
+  SubmissionSectionUploadFileEditComponent,
+  SubmissionSectionUploadFileViewComponent,
+  SubmissionImportExternalComponent,
+  ThemedSubmissionImportExternalComponent,
+  SubmissionImportExternalSearchbarComponent,
+  SubmissionImportExternalPreviewComponent,
+  SubmissionImportExternalCollectionComponent
+];
 
 @NgModule({
   imports: [
@@ -37,36 +72,11 @@ import { CoreState } from '../core/core.reducers';
     SharedModule,
     StoreModule.forFeature('submission', submissionReducers, storeModuleConfig as StoreConfig<SubmissionState, Action>),
     EffectsModule.forFeature(submissionEffects),
-    TranslateModule
+    JournalEntitiesModule.withEntryComponents(),
+    ResearchEntitiesModule.withEntryComponents(),
   ],
-  declarations: [
-    SubmissionSectionUploadAccessConditionsComponent,
-    SubmissionSectionUploadComponent,
-    SubmissionSectionformComponent,
-    SubmissionSectionLicenseComponent,
-    SectionsDirective,
-    SubmissionSectionContainerComponent,
-    SubmissionEditComponent,
-    SubmissionFormSectionAddComponent,
-    SubmissionFormCollectionComponent,
-    SubmissionFormComponent,
-    SubmissionFormFooterComponent,
-    SubmissionSubmitComponent,
-    SubmissionUploadFilesComponent,
-    SubmissionSectionUploadFileComponent,
-    SubmissionSectionUploadFileEditComponent,
-    SubmissionSectionUploadFileViewComponent
-  ],
-  entryComponents: [
-    SubmissionSectionUploadComponent,
-    SubmissionSectionformComponent,
-    SubmissionSectionLicenseComponent,
-    SubmissionSectionContainerComponent],
-  exports: [
-    SubmissionEditComponent,
-    SubmissionFormComponent,
-    SubmissionSubmitComponent
-  ],
+  declarations: DECLARATIONS,
+  exports: DECLARATIONS,
   providers: [
     SectionUploadService,
     SectionsService,

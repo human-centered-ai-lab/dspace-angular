@@ -1,9 +1,8 @@
-import { async, TestBed } from '@angular/core/testing';
-
-import { getTestScheduler } from 'jasmine-marbles';
+import { getTestScheduler, hot } from 'jasmine-marbles';
 import { TestScheduler } from 'rxjs/testing';
 import { of as observableOf } from 'rxjs';
-import { Store, StoreModule } from '@ngrx/store';
+import { catchError } from 'rxjs/operators';
+import { Store } from '@ngrx/store';
 
 import { getMockRequestService } from '../../shared/mocks/request.service.mock';
 import { RequestService } from '../data/request.service';
@@ -21,10 +20,10 @@ import {
   RollbacktPatchOperationsAction,
   StartTransactionPatchOperationsAction
 } from './json-patch-operations.actions';
-import { StoreMock } from '../../shared/testing/store.mock';
 import { RequestEntry } from '../data/request.reducer';
-import { catchError } from 'rxjs/operators';
-import { storeModuleConfig } from '../../app.reducer';
+import { createFailedRemoteDataObject, createSuccessfulRemoteDataObject } from '../../shared/remote-data.utils';
+import { deepClone } from 'fast-json-patch';
+
 
 class TestService extends JsonPatchOperationsService<SubmitDataResponseDefinitionObject, SubmissionPatchRequest> {
   protected linkPath = '';
@@ -33,7 +32,8 @@ class TestService extends JsonPatchOperationsService<SubmitDataResponseDefinitio
   constructor(
     protected requestService: RequestService,
     protected store: Store<CoreState>,
-    protected halService: HALEndpointService) {
+    protected halService: HALEndpointService,
+    protected rdbService: RemoteDataBuildService) {
 
     super();
   }
@@ -61,7 +61,7 @@ describe('JsonPatchOperationsService test suite', () => {
                   path: '/testResourceType/testResourceId/testField',
                   value: ['test']
                 },
-                timeAdded: timestamp
+                timeCompleted: timestamp
               },
             ]
           } as JsonPatchOperationsEntry
@@ -86,40 +86,49 @@ describe('JsonPatchOperationsService test suite', () => {
 
   const getRequestEntry$ = (successful: boolean) => {
     return observableOf({
-      response: { isSuccessful: successful, timeAdded: timestampResponse } as any
-    } as RequestEntry)
+      response: { isSuccessful: successful, timeCompleted: timestampResponse } as any
+    } as RequestEntry);
   };
 
   function initTestService(): TestService {
     return new TestService(
       requestService,
       store,
-      halService
+      halService,
+      rdbService
     );
 
   }
 
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      imports: [
-        StoreModule.forRoot({}, storeModuleConfig),
-      ],
-      providers: [
-        { provide: Store, useClass: StoreMock }
-      ]
-    }).compileComponents();
-  }));
+  function getStore() {
+    return jasmine.createSpyObj('store', {
+      dispatch: {},
+      select: observableOf(mockState['json/patch'][testJsonPatchResourceType]),
+      pipe: observableOf(true)
+    });
+  }
+
+  function spyOnRdbServiceAndReturnSuccessfulRemoteData() {
+    spyOn(rdbService, 'buildFromRequestUUID').and.returnValue(
+      observableOf(Object.assign(createSuccessfulRemoteDataObject({ dataDefinition: 'test' }), { timeCompleted: new Date().getTime() + 10000 }))
+    );
+  }
+
+  function spyOnRdbServiceAndReturnFailedRemoteData() {
+    spyOn(rdbService, 'buildFromRequestUUID').and.returnValue(
+      observableOf(Object.assign(createFailedRemoteDataObject('Error', 500), { timeCompleted: new Date().getTime() + 10000 }))
+    );
+  }
 
   beforeEach(() => {
-    store = TestBed.get(Store);
+    store = getStore();
     requestService = getMockRequestService(getRequestEntry$(true));
     rdbService = getMockRemoteDataBuildService();
     scheduler = getTestScheduler();
     halService = new HALEndpointServiceStub(resourceEndpointURL);
     service = initTestService();
+    spyOnRdbServiceAndReturnSuccessfulRemoteData();
 
-    spyOn(store, 'select').and.returnValue(observableOf(mockState['json/patch'][testJsonPatchResourceType]));
-    spyOn(store, 'dispatch').and.callThrough();
     spyOn(Date.prototype, 'getTime').and.callFake(() => {
       return timestamp;
     });
@@ -136,12 +145,12 @@ describe('JsonPatchOperationsService test suite', () => {
       expect((service as any).submitJsonPatchOperations).toHaveBeenCalled();
     });
 
-    it('should configure a new SubmissionPatchRequest', () => {
+    it('should send a new SubmissionPatchRequest', () => {
       const expected = new SubmissionPatchRequest(requestService.generateRequestId(), resourceHref, patchOpBody);
       scheduler.schedule(() => service.jsonPatchByResourceType(resourceEndpoint, resourceScope, testJsonPatchResourceType).subscribe());
       scheduler.flush();
 
-      expect(requestService.configure).toHaveBeenCalledWith(expected);
+      expect(requestService.send).toHaveBeenCalledWith(expected);
     });
 
     it('should dispatch a new StartTransactionPatchOperationsAction', () => {
@@ -164,12 +173,13 @@ describe('JsonPatchOperationsService test suite', () => {
 
     describe('when request is not successful', () => {
       beforeEach(() => {
-        store = TestBed.get(Store);
+        store = getStore();
         requestService = getMockRequestService(getRequestEntry$(false));
         rdbService = getMockRemoteDataBuildService();
         scheduler = getTestScheduler();
         halService = new HALEndpointServiceStub(resourceEndpointURL);
         service = initTestService();
+        spyOnRdbServiceAndReturnFailedRemoteData();
 
         store.select.and.returnValue(observableOf(mockState['json/patch'][testJsonPatchResourceType]));
         store.dispatch.and.callThrough();
@@ -188,6 +198,32 @@ describe('JsonPatchOperationsService test suite', () => {
     });
   });
 
+  describe('hasPendingOperations', () => {
+
+    it('should return true when there are pending operations', () => {
+
+      const expected = hot('(x|)', { x: true });
+
+      const result = service.hasPendingOperations(testJsonPatchResourceType);
+      expect(result).toBeObservable(expected);
+
+    });
+
+    it('should return false when there are not pending operations', () => {
+
+      const mockStateNoOp = deepClone(mockState);
+      mockStateNoOp['json/patch'][testJsonPatchResourceType].children = [];
+      store.select.and.returnValue(observableOf(mockStateNoOp['json/patch'][testJsonPatchResourceType]));
+
+      const expected = hot('(x|)', { x: false });
+
+      const result = service.hasPendingOperations(testJsonPatchResourceType);
+      expect(result).toBeObservable(expected);
+
+    });
+
+  });
+
   describe('jsonPatchByResourceID', () => {
 
     it('should call submitJsonPatchOperations method', () => {
@@ -199,12 +235,12 @@ describe('JsonPatchOperationsService test suite', () => {
       expect((service as any).submitJsonPatchOperations).toHaveBeenCalled();
     });
 
-    it('should configure a new SubmissionPatchRequest', () => {
+    it('should send a new SubmissionPatchRequest', () => {
       const expected = new SubmissionPatchRequest(requestService.generateRequestId(), resourceHref, patchOpBody);
       scheduler.schedule(() => service.jsonPatchByResourceID(resourceEndpoint, resourceScope, testJsonPatchResourceType, testJsonPatchResourceId).subscribe());
       scheduler.flush();
 
-      expect(requestService.configure).toHaveBeenCalledWith(expected);
+      expect(requestService.send).toHaveBeenCalledWith(expected);
     });
 
     it('should dispatch a new StartTransactionPatchOperationsAction', () => {
@@ -227,12 +263,13 @@ describe('JsonPatchOperationsService test suite', () => {
 
     describe('when request is not successful', () => {
       beforeEach(() => {
-        store = TestBed.get(Store);
+        store = getStore();
         requestService = getMockRequestService(getRequestEntry$(false));
         rdbService = getMockRemoteDataBuildService();
         scheduler = getTestScheduler();
         halService = new HALEndpointServiceStub(resourceEndpointURL);
         service = initTestService();
+        spyOnRdbServiceAndReturnFailedRemoteData();
 
         store.select.and.returnValue(observableOf(mockState['json/patch'][testJsonPatchResourceType]));
         store.dispatch.and.callThrough();

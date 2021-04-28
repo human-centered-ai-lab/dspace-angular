@@ -15,11 +15,11 @@ import { MetadataService } from '../../core/metadata/metadata.service';
 
 import { fadeInOut } from '../../shared/animations/fade';
 import { hasValue } from '../../shared/empty.util';
+import { AuthService } from '../../core/auth/auth.service';
 
 /**
- * This component renders a simple item page.
+ * This component renders a full item page.
  * The route parameter 'id' is used to request the item it represents.
- * All fields of the item that should be displayed, are defined in its template.
  */
 
 @Component({
@@ -35,8 +35,8 @@ export class FullItemPageComponent extends ItemPageComponent implements OnInit {
 
   metadata$: Observable<MetadataMap>;
 
-  constructor(route: ActivatedRoute, router: Router, items: ItemDataService, metadataService: MetadataService) {
-    super(route, router, items, metadataService);
+  constructor(route: ActivatedRoute, router: Router, items: ItemDataService, metadataService: MetadataService, authService: AuthService) {
+    super(route, router, items, metadataService, authService);
   }
 
   /*** AoT inheritance fix, will hopefully be resolved in the near future **/

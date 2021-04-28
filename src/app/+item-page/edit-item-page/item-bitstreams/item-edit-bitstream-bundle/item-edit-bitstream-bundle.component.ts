@@ -1,8 +1,9 @@
-import { Component, Input, OnInit, ViewChild, ViewContainerRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild, ViewContainerRef } from '@angular/core';
 import { Bundle } from '../../../../core/shared/bundle.model';
 import { Item } from '../../../../core/shared/item.model';
 import { ResponsiveColumnSizes } from '../../../../shared/responsive-table-sizes/responsive-column-sizes';
 import { ResponsiveTableSizes } from '../../../../shared/responsive-table-sizes/responsive-table-sizes';
+import { getItemPageRoute } from '../../../item-page-routing-paths';
 
 @Component({
   selector: 'ds-item-edit-bitstream-bundle',
@@ -37,10 +38,22 @@ export class ItemEditBitstreamBundleComponent implements OnInit {
   @Input() columnSizes: ResponsiveTableSizes;
 
   /**
+   * Send an event when the user drops an object on the pagination
+   * The event contains details about the index the object came from and is dropped to (across the entirety of the list,
+   * not just within a single page)
+   */
+  @Output() dropObject: EventEmitter<any> = new EventEmitter<any>();
+
+  /**
    * The bootstrap sizes used for the Bundle Name column
    * This column stretches over the first 3 columns and thus is a combination of their sizes processed in ngOnInit
    */
   bundleNameColumn: ResponsiveColumnSizes;
+
+  /**
+   * Route to the item's page
+   */
+  itemPageRoute: string;
 
   constructor(private viewContainerRef: ViewContainerRef) {
   }
@@ -48,5 +61,6 @@ export class ItemEditBitstreamBundleComponent implements OnInit {
   ngOnInit(): void {
     this.bundleNameColumn = this.columnSizes.combineColumns(0, 2);
     this.viewContainerRef.createEmbeddedView(this.bundleView);
+    this.itemPageRoute = getItemPageRoute(this.item);
   }
 }

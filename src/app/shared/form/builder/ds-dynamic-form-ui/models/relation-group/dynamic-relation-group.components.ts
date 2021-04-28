@@ -1,18 +1,8 @@
-import {
-  ChangeDetectorRef,
-  Component,
-  EventEmitter,
-  Inject,
-  Input,
-  OnDestroy,
-  OnInit,
-  Output,
-  ViewChild
-} from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 
 import { combineLatest, Observable, of as observableOf, Subscription } from 'rxjs';
-import { filter, flatMap, map, mergeMap, scan } from 'rxjs/operators';
+import { filter, map, mergeMap, scan } from 'rxjs/operators';
 import {
   DynamicFormControlComponent,
   DynamicFormControlModel,
@@ -23,7 +13,7 @@ import {
 } from '@ng-dynamic-forms/core';
 import { isEqual, isObject } from 'lodash';
 
-import { DynamicRelationGroupModel, PLACEHOLDER_PARENT_METADATA } from './dynamic-relation-group.model';
+import { DynamicRelationGroupModel } from './dynamic-relation-group.model';
 import { FormBuilderService } from '../../../form-builder.service';
 import { SubmissionFormsModel } from '../../../../../../core/config/models/config-submission-forms.model';
 import { FormService } from '../../../../form.service';
@@ -33,13 +23,16 @@ import { hasValue, isEmpty, isNotEmpty, isNotNull } from '../../../../../empty.u
 import { shrinkInOut } from '../../../../../animations/shrink';
 import { ChipsItem } from '../../../../../chips/models/chips-item.model';
 import { hasOnlyEmptyProperties } from '../../../../../object.util';
-import { IntegrationSearchOptions } from '../../../../../../core/integration/models/integration-options.model';
-import { AuthorityService } from '../../../../../../core/integration/authority.service';
-import { IntegrationData } from '../../../../../../core/integration/integration-data';
+import { VocabularyService } from '../../../../../../core/submission/vocabularies/vocabulary.service';
 import { FormFieldMetadataValueObject } from '../../../models/form-field-metadata-value.model';
-import { AuthorityValue } from '../../../../../../core/integration/models/authority.value';
 import { environment } from '../../../../../../../environments/environment';
+import { PLACEHOLDER_PARENT_METADATA } from '../../ds-dynamic-form-constants';
+import { getFirstSucceededRemoteDataPayload } from '../../../../../../core/shared/operators';
+import { VocabularyEntryDetail } from '../../../../../../core/submission/vocabularies/models/vocabulary-entry-detail.model';
 
+/**
+ * Component representing a group input field
+ */
 @Component({
   selector: 'ds-dynamic-relation-group',
   styleUrls: ['./dynamic-relation-group.component.scss'],
@@ -64,9 +57,9 @@ export class DsDynamicRelationGroupComponent extends DynamicFormControlComponent
   private selectedChipItem: ChipsItem;
   private subs: Subscription[] = [];
 
-  @ViewChild('formRef', {static: false}) private formRef: FormComponent;
+  @ViewChild('formRef') private formRef: FormComponent;
 
-  constructor(private authorityService: AuthorityService,
+  constructor(private vocabularyService: VocabularyService,
               private formBuilderService: FormBuilderService,
               private formService: FormService,
               private cdr: ChangeDetectorRef,
@@ -81,7 +74,7 @@ export class DsDynamicRelationGroupComponent extends DynamicFormControlComponent
     if (!this.model.isEmpty()) {
       this.formCollapsed = observableOf(true);
     }
-    this.model.valueUpdates.subscribe((value: any[]) => {
+    this.model.valueChanges.subscribe((value: any[]) => {
       if ((isNotEmpty(value) && !(value.length === 1 && hasOnlyEmptyProperties(value[0])))) {
         this.collapseForm();
       } else {
@@ -131,7 +124,7 @@ export class DsDynamicRelationGroupComponent extends DynamicFormControlComponent
 
         const nextValue = (this.formBuilderService.isInputModel(model) && isNotNull(value) && (typeof value !== 'string')) ?
           value.value : value;
-        model.valueUpdates.next(nextValue);
+        model.value = nextValue;
 
       });
     });
@@ -175,6 +168,12 @@ export class DsDynamicRelationGroupComponent extends DynamicFormControlComponent
   delete() {
     this.chips.remove(this.selectedChipItem);
     this.clear();
+  }
+
+  ngOnDestroy(): void {
+    this.subs
+      .filter((sub) => hasValue(sub))
+      .forEach((sub) => sub.unsubscribe());
   }
 
   private addToChips() {
@@ -223,32 +222,28 @@ export class DsDynamicRelationGroupComponent extends DynamicFormControlComponent
     if (this.model.isEmpty()) {
       this.initChips([]);
     } else {
-      initChipsValue$ = observableOf(this.model.value);
+      initChipsValue$ = observableOf(this.model.value as any[]);
 
       // If authority
       this.subs.push(initChipsValue$.pipe(
-        flatMap((valueModel) => {
-          const returnList: Array<Observable<any>> = [];
+        mergeMap((valueModel) => {
+          const returnList: Observable<any>[] = [];
           valueModel.forEach((valueObj) => {
             const returnObj = Object.keys(valueObj).map((fieldName) => {
               let return$: Observable<any>;
               if (isObject(valueObj[fieldName]) && valueObj[fieldName].hasAuthority() && isNotEmpty(valueObj[fieldName].authority)) {
                 const fieldId = fieldName.replace(/\./g, '_');
                 const model = this.formBuilderService.findById(fieldId, this.formModel);
-                const searchOptions: IntegrationSearchOptions = new IntegrationSearchOptions(
-                  (model as any).authorityOptions.scope,
-                  (model as any).authorityOptions.name,
-                  (model as any).authorityOptions.metadata,
+                return$ = this.vocabularyService.findEntryDetailById(
                   valueObj[fieldName].authority,
-                  (model as any).maxOptions,
-                  1);
-
-                return$ = this.authorityService.getEntryByValue(searchOptions).pipe(
-                  map((result: IntegrationData) => Object.assign(
+                  (model as any).vocabularyOptions.name
+                ).pipe(
+                  getFirstSucceededRemoteDataPayload(),
+                  map((entryDetail: VocabularyEntryDetail) => Object.assign(
                     new FormFieldMetadataValueObject(),
                     valueObj[fieldName],
                     {
-                      otherInformation: (result.payload[0] as AuthorityValue).otherInformation
+                      otherInformation: entryDetail.otherInformation
                     })
                   ));
               } else {
@@ -269,7 +264,7 @@ export class DsDynamicRelationGroupComponent extends DynamicFormControlComponent
                 )
               })
             )
-          )
+          );
         }),
         scan((acc: any[], valueObj: any) => {
           if (acc.length === 0) {
@@ -279,9 +274,9 @@ export class DsDynamicRelationGroupComponent extends DynamicFormControlComponent
           }
           return acc;
         }, []),
-        filter((modelValues: any[]) => this.model.value.length === modelValues.length)
+        filter((modelValues: any[]) => (this.model.value as any[]).length === modelValues.length)
       ).subscribe((modelValue) => {
-        this.model.valueUpdates.next(modelValue);
+        this.model.value = modelValue;
         this.initChips(modelValue);
         this.cdr.markForCheck();
       }));
@@ -301,7 +296,7 @@ export class DsDynamicRelationGroupComponent extends DynamicFormControlComponent
           // Does not emit change if model value is equal to the current value
           if (!isEqual(items, this.model.value)) {
             if (!(isEmpty(items) && this.model.isEmpty())) {
-              this.model.valueUpdates.next(items);
+              this.model.value = items;
               this.change.emit();
             }
           }
@@ -313,12 +308,6 @@ export class DsDynamicRelationGroupComponent extends DynamicFormControlComponent
     if (this.formRef) {
       this.formService.resetForm(this.formRef.formGroup, this.formModel, this.formId);
     }
-  }
-
-  ngOnDestroy(): void {
-    this.subs
-      .filter((sub) => hasValue(sub))
-      .forEach((sub) => sub.unsubscribe());
   }
 
 }

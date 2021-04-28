@@ -1,4 +1,4 @@
-import { async, ComponentFixture, fakeAsync, TestBed } from '@angular/core/testing';
+import { waitForAsync, ComponentFixture, fakeAsync, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NO_ERRORS_SCHEMA, ViewContainerRef } from '@angular/core';
@@ -15,18 +15,24 @@ import { RouterStub } from '../../shared/testing/router.stub';
 import { mockSubmissionObject } from '../../shared/mocks/submission.mock';
 import { SubmissionSubmitComponent } from './submission-submit.component';
 import { ActivatedRouteStub } from '../../shared/testing/active-router.stub';
+import { ItemDataService } from '../../core/data/item-data.service';
+import { createSuccessfulRemoteDataObject$ } from '../../shared/remote-data.utils';
 
 describe('SubmissionSubmitComponent Component', () => {
 
   let comp: SubmissionSubmitComponent;
   let fixture: ComponentFixture<SubmissionSubmitComponent>;
   let submissionServiceStub: SubmissionServiceStub;
+  let itemDataService: ItemDataService;
   let router: RouterStub;
 
   const submissionId = '826';
   const submissionObject: any = mockSubmissionObject;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
+    itemDataService = jasmine.createSpyObj('itemDataService', {
+      findByHref: createSuccessfulRemoteDataObject$(submissionObject.item),
+    });
     TestBed.configureTestingModule({
       imports: [
         TranslateModule.forRoot(),
@@ -38,6 +44,7 @@ describe('SubmissionSubmitComponent Component', () => {
       providers: [
         { provide: NotificationsService, useClass: NotificationsServiceStub },
         { provide: SubmissionService, useClass: SubmissionServiceStub },
+        { provide: ItemDataService, useValue: itemDataService },
         { provide: TranslateService, useValue: getMockTranslateService() },
         { provide: Router, useValue: new RouterStub() },
         { provide: ActivatedRoute, useValue: new ActivatedRouteStub() },
@@ -50,8 +57,8 @@ describe('SubmissionSubmitComponent Component', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(SubmissionSubmitComponent);
     comp = fixture.componentInstance;
-    submissionServiceStub = TestBed.get(SubmissionService);
-    router = TestBed.get(Router);
+    submissionServiceStub = TestBed.inject(SubmissionService as any);
+    router = TestBed.inject(Router as any);
   });
 
   afterEach(() => {
@@ -60,7 +67,7 @@ describe('SubmissionSubmitComponent Component', () => {
     router = null;
   });
 
-  it('should init properly when a valid SubmissionObject has been retrieved', fakeAsync(() => {
+  it('should init properly when a valid SubmissionObject has been retrieved',() => {
 
     submissionServiceStub.createSubmission.and.returnValue(observableOf(submissionObject));
 
@@ -69,11 +76,12 @@ describe('SubmissionSubmitComponent Component', () => {
     expect(comp.submissionId.toString()).toEqual(submissionId);
     expect(comp.collectionId).toBe(submissionObject.collection.id);
     expect(comp.selfUrl).toBe(submissionObject._links.self.href);
+    expect(comp.sections).toBe(submissionObject.sections);
     expect(comp.submissionDefinition).toBe(submissionObject.submissionDefinition);
 
-  }));
+  });
 
-  it('should redirect to mydspace when an empty SubmissionObject has been retrieved', fakeAsync(() => {
+  it('should redirect to mydspace when an empty SubmissionObject has been retrieved',() => {
 
     submissionServiceStub.createSubmission.and.returnValue(observableOf({}));
 
@@ -81,9 +89,9 @@ describe('SubmissionSubmitComponent Component', () => {
 
     expect(router.navigate).toHaveBeenCalled();
 
-  }));
+  });
 
-  it('should not has effects when an invalid SubmissionObject has been retrieved', fakeAsync(() => {
+  it('should not has effects when an invalid SubmissionObject has been retrieved',() => {
 
     submissionServiceStub.createSubmission.and.returnValue(observableOf(null));
 
@@ -93,6 +101,6 @@ describe('SubmissionSubmitComponent Component', () => {
     expect(comp.collectionId).toBeUndefined();
     expect(comp.selfUrl).toBeUndefined();
     expect(comp.submissionDefinition).toBeUndefined();
-  }));
+  });
 
 });

@@ -1,5 +1,4 @@
 import { FormFieldModel } from '../models/form-field.model';
-import { FormFieldMetadataValueObject } from '../models/form-field-metadata-value.model';
 import { ParserOptions } from './parser-options';
 import { DisabledFieldParser } from './disabled-field-parser';
 import { DynamicDisabledModel } from '../ds-dynamic-form-ui/models/disabled/dynamic-disabled.model';
@@ -12,7 +11,7 @@ describe('DisabledFieldParser test suite', () => {
   const parserOptions: ParserOptions = {
     readOnly: false,
     submissionScope: null,
-    authorityUuid: null
+    collectionUUID: null
   };
 
   beforeEach(() => {
@@ -51,15 +50,15 @@ describe('DisabledFieldParser test suite', () => {
   it('should set init value properly', () => {
     initFormValues = {
       description: [
-        new FormFieldMetadataValueObject('test description'),
+        'test description',
       ],
     };
-    const expectedValue ='test description';
+    const expectedValue = 'test description';
 
     const parser = new DisabledFieldParser(submissionId, field, initFormValues, parserOptions);
 
     const fieldModel = parser.parse();
-    expect(fieldModel.value).toEqual(expectedValue);
+    expect(fieldModel.value.value).toEqual(expectedValue);
   });
 
 });

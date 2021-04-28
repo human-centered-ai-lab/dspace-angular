@@ -13,7 +13,7 @@
       <input class="form-control"
              [attr.autoComplete]="model.autoComplete"
              [class.is-invalid]="showErrorMessages"
-             [dynamicId]="bindId && model.id"
+             [id]="model.id"
              [name]="model.name"
              [type]="model.inputType"
              [(ngModel)]="firstInputValue"
@@ -21,8 +21,8 @@
              [placeholder]="model.placeholder | translate"
              [readonly]="model.readOnly"
              (change)="onChange($event)"
-             (blur)="onBlurEvent($event); $event.stopPropagation(); sdRef.close();"
-             (focus)="onFocusEvent($event); $event.stopPropagation(); sdRef.close();"
+             (blur)="onBlur($event); $event.stopPropagation(); sdRef.close();"
+             (focus)="onFocus($event); $event.stopPropagation(); sdRef.close();"
              (click)="$event.stopPropagation(); $event.stopPropagation(); sdRef.close();">
     </div>
 
@@ -32,7 +32,7 @@
               [ngClass]="{}"
               [attr.autoComplete]="model.autoComplete"
               [class.is-invalid]="showErrorMessages"
-              [dynamicId]="bindId && model.id"
+              [id]="id"
               [name]="model.name + '_2'"
               [type]="model.inputType"
               [(ngModel)]="secondInputValue"
@@ -40,8 +40,8 @@
               [placeholder]="model.secondPlaceholder | translate"
               [readonly]="model.readOnly"
               (change)="onChange($event)"
-              (blur)="onBlurEvent($event); $event.stopPropagation(); sdRef.close();"
-              (focus)="onFocusEvent($event); $event.stopPropagation(); sdRef.close();"
+              (blur)="onBlur($event); $event.stopPropagation(); sdRef.close();"
+              (focus)="onFocus($event); $event.stopPropagation(); sdRef.close();"
               (click)="$event.stopPropagation(); sdRef.close();">
     </div>
     <div class="col-auto text-center">

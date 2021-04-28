@@ -1,27 +1,26 @@
 // Load the implementations that should be tested
 import { ChangeDetectorRef, Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { async, ComponentFixture, fakeAsync, flush, inject, TestBed, } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, flush, inject, TestBed, waitForAsync, } from '@angular/core/testing';
 import { of as observableOf } from 'rxjs';
 
-import {
-  DynamicFormLayoutService,
-  DynamicFormsCoreModule,
-  DynamicFormValidationService
-} from '@ng-dynamic-forms/core';
+import { DynamicFormLayoutService, DynamicFormsCoreModule, DynamicFormValidationService } from '@ng-dynamic-forms/core';
 import { DynamicFormsNGBootstrapUIModule } from '@ng-dynamic-forms/ui-ng-bootstrap';
 import { NgbModule, NgbTypeaheadSelectItemEvent } from '@ng-bootstrap/ng-bootstrap';
 
-import { AuthorityOptions } from '../../../../../../core/integration/models/authority-options.model';
-import { AuthorityService } from '../../../../../../core/integration/authority.service';
-import { AuthorityServiceStub } from '../../../../../testing/authority-service.stub';
+import { VocabularyOptions } from '../../../../../../core/submission/vocabularies/models/vocabulary-options.model';
+import { VocabularyService } from '../../../../../../core/submission/vocabularies/vocabulary.service';
+import { VocabularyServiceStub } from '../../../../../testing/vocabulary-service.stub';
 import { DsDynamicTagComponent } from './dynamic-tag.component';
 import { DynamicTagModel } from './dynamic-tag.model';
-import { GlobalConfig } from '../../../../../../../config/global-config.interface';
 import { Chips } from '../../../../../chips/models/chips.model';
 import { FormFieldMetadataValueObject } from '../../../models/form-field-metadata-value.model';
-import { AuthorityValue } from '../../../../../../core/integration/models/authority.value';
+import { VocabularyEntry } from '../../../../../../core/submission/vocabularies/models/vocabulary-entry.model';
 import { createTestComponent } from '../../../../../testing/utils.test';
+import {
+  mockDynamicFormLayoutService,
+  mockDynamicFormValidationService
+} from '../../../../../testing/dynamic-form-mock-services';
 
 function createKeyUpEvent(key: number) {
   /* tslint:disable:no-empty */
@@ -45,12 +44,10 @@ function init() {
   });
 
   TAG_TEST_MODEL_CONFIG = {
-    authorityOptions: {
+    vocabularyOptions: {
       closed: false,
-      metadata: 'tag',
-      name: 'common_iso_languages',
-      scope: 'c1c16450-d56f-41bc-bb81-27f1d1eb5c23'
-    } as AuthorityOptions,
+      name: 'common_iso_languages'
+    } as VocabularyOptions,
     disabled: false,
     id: 'tag',
     label: 'Keywords',
@@ -73,9 +70,9 @@ describe('DsDynamicTagComponent test suite', () => {
   let chips: Chips;
   let modelValue: any;
 
-  // async beforeEach
-  beforeEach(async(() => {
-    const authorityServiceStub = new AuthorityServiceStub();
+  // waitForAsync beforeEach
+  beforeEach(waitForAsync(() => {
+    const vocabularyServiceStub = new VocabularyServiceStub();
     init();
     TestBed.configureTestingModule({
       imports: [
@@ -92,9 +89,9 @@ describe('DsDynamicTagComponent test suite', () => {
       providers: [
         ChangeDetectorRef,
         DsDynamicTagComponent,
-        { provide: AuthorityService, useValue: authorityServiceStub },
-        { provide: DynamicFormLayoutService, useValue: {} },
-        { provide: DynamicFormValidationService, useValue: {} }
+        { provide: VocabularyService, useValue: vocabularyServiceStub },
+        { provide: DynamicFormLayoutService, useValue: mockDynamicFormLayoutService },
+        { provide: DynamicFormValidationService, useValue: mockDynamicFormValidationService }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     });
@@ -124,7 +121,7 @@ describe('DsDynamicTagComponent test suite', () => {
     }));
   });
 
-  describe('when authorityOptions are set', () => {
+  describe('when vocabularyOptions are set', () => {
     describe('and init model value is empty', () => {
       beforeEach(() => {
 
@@ -143,25 +140,23 @@ describe('DsDynamicTagComponent test suite', () => {
       it('should init component properly', () => {
         chips = new Chips([], 'display');
         expect(tagComp.chips.getChipsItems()).toEqual(chips.getChipsItems());
-
-        expect(tagComp.searchOptions).toBeDefined();
       });
 
       it('should search when 3+ characters typed', fakeAsync(() => {
-        spyOn((tagComp as any).authorityService, 'getEntriesByName').and.callThrough();
+        spyOn((tagComp as any).vocabularyService, 'getVocabularyEntriesByValue').and.callThrough();
 
         tagComp.search(observableOf('test')).subscribe(() => {
-          expect((tagComp as any).authorityService.getEntriesByName).toHaveBeenCalled();
+          expect((tagComp as any).vocabularyService.getVocabularyEntriesByValue).toHaveBeenCalled();
         });
       }));
 
       it('should select a results entry properly', fakeAsync(() => {
         modelValue = [
-          Object.assign(new AuthorityValue(), { id: 1, display: 'Name, Lastname', value: 1 })
+          Object.assign(new VocabularyEntry(), { authority: 1, display: 'Name, Lastname', value: 1 })
         ];
         const event: NgbTypeaheadSelectItemEvent = {
-          item: Object.assign(new AuthorityValue(), {
-            id: 1,
+          item: Object.assign(new VocabularyEntry(), {
+            authority: 1,
             display: 'Name, Lastname',
             value: 1
           }),
@@ -233,13 +228,12 @@ describe('DsDynamicTagComponent test suite', () => {
       it('should init component properly', () => {
         chips = new Chips(modelValue, 'display');
         expect(tagComp.chips.getChipsItems()).toEqual(chips.getChipsItems());
-        expect(tagComp.searchOptions).toBeDefined();
       });
     });
 
   });
 
-  describe('when authorityOptions are not set', () => {
+  describe('when vocabularyOptions are not set', () => {
     describe('and init model value is empty', () => {
       beforeEach(() => {
 
@@ -247,7 +241,7 @@ describe('DsDynamicTagComponent test suite', () => {
         tagComp = tagFixture.componentInstance; // FormComponent test instance
         tagComp.group = TAG_TEST_GROUP;
         const config = TAG_TEST_MODEL_CONFIG;
-        config.authorityOptions = null;
+        config.vocabularyOptions = null;
         tagComp.model = new DynamicTagModel(config);
         tagFixture.detectChanges();
       });
@@ -260,7 +254,6 @@ describe('DsDynamicTagComponent test suite', () => {
       it('should init component properly', () => {
         chips = new Chips([], 'display');
         expect(tagComp.chips.getChipsItems()).toEqual(chips.getChipsItems());
-        expect(tagComp.searchOptions).not.toBeDefined();
       });
 
       it('should add an item on ENTER or key press is \',\' or \';\'', fakeAsync(() => {

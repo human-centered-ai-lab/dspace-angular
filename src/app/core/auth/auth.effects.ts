@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 
 import { combineLatest as observableCombineLatest, Observable, of as observableOf } from 'rxjs';
-import { catchError, debounceTime, filter, map, switchMap, take, tap } from 'rxjs/operators';
+import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 // import @ngrx
 import { Actions, Effect, ofType } from '@ngrx/effects';
 import { Action, select, Store } from '@ngrx/store';
@@ -27,12 +27,10 @@ import {
   CheckAuthenticationTokenCookieAction,
   LogOutErrorAction,
   LogOutSuccessAction,
+  RedirectAfterLoginSuccessAction,
   RefreshTokenAction,
   RefreshTokenErrorAction,
   RefreshTokenSuccessAction,
-  RegistrationAction,
-  RegistrationErrorAction,
-  RegistrationSuccessAction,
   RetrieveAuthenticatedEpersonAction,
   RetrieveAuthenticatedEpersonErrorAction,
   RetrieveAuthenticatedEpersonSuccessAction,
@@ -65,7 +63,6 @@ export class AuthEffects {
   @Effect()
   public authenticateSuccess$: Observable<Action> = this.actions$.pipe(
     ofType(AuthActionTypes.AUTHENTICATE_SUCCESS),
-    tap((action: AuthenticationSuccessAction) => this.authService.storeToken(action.payload)),
     map((action: AuthenticationSuccessAction) => new AuthenticatedAction(action.payload))
   );
 
@@ -82,7 +79,27 @@ export class AuthEffects {
   @Effect()
   public authenticatedSuccess$: Observable<Action> = this.actions$.pipe(
     ofType(AuthActionTypes.AUTHENTICATED_SUCCESS),
-    map((action: AuthenticatedSuccessAction) => new RetrieveAuthenticatedEpersonAction(action.payload.userHref))
+    tap((action: AuthenticatedSuccessAction) => this.authService.storeToken(action.payload.authToken)),
+    switchMap((action: AuthenticatedSuccessAction) => this.authService.getRedirectUrl().pipe(
+      take(1),
+      map((redirectUrl: string) => [action, redirectUrl])
+    )),
+    map(([action, redirectUrl]: [AuthenticatedSuccessAction, string]) => {
+      if (hasValue(redirectUrl)) {
+        return new RedirectAfterLoginSuccessAction(redirectUrl);
+      } else {
+        return new RetrieveAuthenticatedEpersonAction(action.payload.userHref);
+      }
+    })
+  );
+
+  @Effect({ dispatch: false })
+  public redirectAfterLoginSuccess$: Observable<Action> = this.actions$.pipe(
+    ofType(AuthActionTypes.REDIRECT_AFTER_LOGIN_SUCCESS),
+    tap((action: RedirectAfterLoginSuccessAction) => {
+      this.authService.clearRedirectUrl();
+      this.authService.navigateToRedirectUrl(action.payload);
+    })
   );
 
   // It means "reacts to this action but don't send another"
@@ -132,18 +149,6 @@ export class AuthEffects {
           }
         }),
         catchError((error) => observableOf(new AuthenticatedErrorAction(error)))
-      );
-    })
-  );
-
-  @Effect()
-  public createUser$: Observable<Action> = this.actions$.pipe(
-    ofType(AuthActionTypes.REGISTRATION),
-    debounceTime(500), // to remove when functionality is implemented
-    switchMap((action: RegistrationAction) => {
-      return this.authService.create(action.payload).pipe(
-        map((user: EPerson) => new RegistrationSuccessAction(user)),
-        catchError((error) => observableOf(new RegistrationErrorAction(error)))
       );
     })
   );
@@ -217,13 +222,6 @@ export class AuthEffects {
     );
 
   @Effect({ dispatch: false })
-  public redirectToLogin$: Observable<Action> = this.actions$
-    .pipe(ofType(AuthActionTypes.REDIRECT_AUTHENTICATION_REQUIRED),
-      tap(() => this.authService.removeToken()),
-      tap(() => this.authService.redirectToLogin())
-    );
-
-  @Effect({ dispatch: false })
   public redirectToLoginTokenExpired$: Observable<Action> = this.actions$
     .pipe(
       ofType(AuthActionTypes.REDIRECT_TOKEN_EXPIRED),
@@ -240,7 +238,7 @@ export class AuthEffects {
           .pipe(
             map((authMethodModels: AuthMethod[]) => new RetrieveAuthMethodsSuccessAction(authMethodModels)),
             catchError((error) => observableOf(new RetrieveAuthMethodsErrorAction()))
-          )
+          );
       })
     );
 

@@ -8,6 +8,10 @@ import { switchMap } from 'rxjs/operators';
 import { PaginatedSearchOptions } from '../../../../../shared/search/paginated-search-options.model';
 import { ResponsiveTableSizes } from '../../../../../shared/responsive-table-sizes/responsive-table-sizes';
 import { followLink } from '../../../../../shared/utils/follow-link-config.model';
+import { ObjectValuesPipe } from '../../../../../shared/utils/object-values-pipe';
+import { RequestService } from '../../../../../core/data/request.service';
+import { PaginationService } from '../../../../../core/pagination/pagination.service';
+import { PaginationComponentOptions } from '../../../../../shared/pagination/pagination-component-options.model';
 
 @Component({
   selector: 'ds-paginated-drag-and-drop-bitstream-list',
@@ -33,8 +37,11 @@ export class PaginatedDragAndDropBitstreamListComponent extends AbstractPaginate
 
   constructor(protected objectUpdatesService: ObjectUpdatesService,
               protected elRef: ElementRef,
-              protected bundleService: BundleDataService) {
-    super(objectUpdatesService, elRef);
+              protected objectValuesPipe: ObjectValuesPipe,
+              protected bundleService: BundleDataService,
+              protected paginationService: PaginationService,
+              protected requestService: RequestService) {
+    super(objectUpdatesService, elRef, objectValuesPipe, paginationService);
   }
 
   ngOnInit() {
@@ -46,11 +53,17 @@ export class PaginatedDragAndDropBitstreamListComponent extends AbstractPaginate
    */
   initializeObjectsRD(): void {
     this.objectsRD$ = this.currentPage$.pipe(
-      switchMap((page: number) => this.bundleService.getBitstreams(
-        this.bundle.id,
-        new PaginatedSearchOptions({pagination: Object.assign({}, this.options, { currentPage: page })}),
-        followLink('format')
-      ))
+      switchMap((page: PaginationComponentOptions) => {
+        const paginatedOptions = new PaginatedSearchOptions({pagination: Object.assign({}, page)});
+        return this.bundleService.getBitstreamsEndpoint(this.bundle.id, paginatedOptions).pipe(
+          switchMap((href) => this.requestService.hasByHref$(href)),
+          switchMap(() => this.bundleService.getBitstreams(
+            this.bundle.id,
+            paginatedOptions,
+            followLink('format')
+          ))
+        );
+      })
     );
   }
 

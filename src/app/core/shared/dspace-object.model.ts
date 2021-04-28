@@ -29,7 +29,7 @@ export class DSpaceObject extends ListableObject implements CacheableObject {
 
   @excludeFromEquals
   @deserializeAs('name')
-  private _name: string;
+  protected _name: string;
 
   /**
    * The human-readable identifier of this DSpaceObject
@@ -39,7 +39,7 @@ export class DSpaceObject extends ListableObject implements CacheableObject {
   id: string;
 
   /**
-   * The universally unique identifier of this DSpaceObject
+   * The universally unique ide ntifier of this DSpaceObject
    */
   @autoserializeAs(String)
   uuid: string;
@@ -181,7 +181,28 @@ export class DSpaceObject extends ListableObject implements CacheableObject {
   /**
    * Method that returns as which type of object this object should be rendered
    */
-  getRenderTypes(): Array<string | GenericConstructor<ListableObject>> {
+  getRenderTypes(): (string | GenericConstructor<ListableObject>)[] {
     return [this.constructor as GenericConstructor<ListableObject>];
   }
+
+  setMetadata(key: string, language?: string, ...values: string[]) {
+    const mdValues: MetadataValue[] = values.map((value: string, index: number) => {
+      const md = new MetadataValue();
+      md.value = value;
+      md.authority = null;
+      md.confidence = -1;
+      md.language = language || null;
+      md.place = index;
+      return md;
+    });
+    if (hasNoValue(this.metadata)) {
+      this.metadata = Object.create({});
+    }
+    this.metadata[key] = mdValues;
+  }
+
+  removeMetadata(key: string) {
+    delete this.metadata[key];
+  }
+
 }

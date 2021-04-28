@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Community } from '../../core/shared/community.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EditComColPageComponent } from '../../shared/comcol-forms/edit-comcol-page/edit-comcol-page.component';
-import { getCommunityPageRoute } from '../community-page-routing.module';
+import { getCommunityPageRoute } from '../community-page-routing-paths';
 
 /**
  * Component that represents the page where a user can edit an existing Community
@@ -26,6 +26,6 @@ export class EditCommunityPageComponent extends EditComColPageComponent<Communit
    * @param community The community for which the url is requested
    */
   getPageUrl(community: Community): string {
-    return getCommunityPageRoute(community.id)
+    return getCommunityPageRoute(community.id);
   }
 }
